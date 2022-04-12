@@ -4,8 +4,6 @@ using EFCore.QueryIncludeSchema.Interfaces;
 using EFCore.QueryIncludeSchema.Tests.Unit.Fixtures;
 using System.Linq;
 using Xunit;
-using EFCore.QueryIncludeSchema.Tests.Unit.Data.Entieties;
-using System.Collections.Generic;
 
 namespace EFCore.QueryIncludeSchema.Tests.Unit
 {
@@ -16,15 +14,6 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         public QueryIncludeSchemaTests(SeedDatabaseFixture seedDatabaseFixture)
         {
             this.seedDatabaseFixture = seedDatabaseFixture;
-        }
-
-        public IEnumerable<AEntity> GetA(IncludePropertyPath<AEntity>? includePropertyPath = null)
-        {
-            using var context = seedDatabaseFixture.GetNewContext();
-            return QueryIncludeSchema
-                .For(context.As)
-                .Execute(includePropertyPath)
-                .ToList();
         }
 
         [Fact]
