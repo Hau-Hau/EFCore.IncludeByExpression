@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace EFCore.QueryIncludeSchema.Interfaces
+﻿namespace EFCore.QueryIncludeSchema.Interfaces
 {
     public interface ISchemaExecutable<TEntity>
         where TEntity : class

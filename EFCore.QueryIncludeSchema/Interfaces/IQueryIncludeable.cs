@@ -7,6 +7,7 @@ namespace EFCore.QueryIncludeSchema.Interfaces
     public interface IQueryIncludable<TEntity>
         where TEntity : class
     {
+        // Container for extension methods
     }
 
     public static class IQueryIncludableExtensions
