@@ -1,6 +1,9 @@
 # EFCore.QueryIncludeSchema
+[![tests](https://github.com/Hau-Hau/EFCore.QueryIncludeSchema/actions/workflows/tests.yml/badge.svg)](https://github.com/Hau-Hau/EFCore.QueryIncludeSchema/actions/workflows/tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/Hau-Hau/EFCore.QueryIncludeSchema/badge.svg)](https://coveralls.io/github/Hau-Hau/EFCore.QueryIncludeSchema)
 
-This repository provides a library that simplify exposing .Include and .ThenInclude methods.
+
+This repository provides a library that allows to expose only .Include and .ThenInclude methods.
 
 ### Example Usage
 ```csharp

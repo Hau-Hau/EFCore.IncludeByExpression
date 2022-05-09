@@ -1,0 +1,25 @@
+name: tests
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    name: tests-${{ matrix.operating-system }}-dotnet-${{ matrix.dotnet-version }}
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ ubuntu-latest, windows-latest, macOS-latest ]
+        dotnet-version: [ 6.0.x ]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
