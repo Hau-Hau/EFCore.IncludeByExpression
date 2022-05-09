@@ -1,0 +1,31 @@
+name: coverage
+on:
+  push:
+    branches: [ main ]
+env:
+  DOTNET_VERSION: 6.0.x
+jobs:
+  build:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION  }}
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Collect coverage
+      run: dotnet test --no-restore 
+        /p:CollectCoverage=true 
+        /p:CoverletOutputFormat=lcov 
+        /p:CoverletOutput=/home/runner/.dotnet/
+    - name: Update coveralls data
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }} 
+        path-to-lcov: /home/runner/.dotnet/coverage.info
+
