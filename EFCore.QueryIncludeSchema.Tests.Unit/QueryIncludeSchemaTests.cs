@@ -17,7 +17,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         }
 
         [Fact]
-        public void NoRelatedDataIncluded_ReturnsOnlyBase()
+        public void WhenNoRelatedDataIncluded_ThenReturnsOnlyBase()
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
@@ -29,7 +29,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         }
 
         [Fact]
-        public void ParentIncluded_ParentExists()
+        public void WhenParentIncluded_ThenParentExists()
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
@@ -45,7 +45,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         }
 
         [Fact]
-        public void ChildsIncluded_ChildsArrayIsNotNullOrEmpty()
+        public void WhenChildsIncluded_ThenChildsArrayIsNotNullOrEmpty()
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
@@ -63,7 +63,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         }
 
         [Fact]
-        public void ParentsChildsIncluded_ParentAndParentsChildsAreExists()
+        public void WhenParentsChildsIncluded_ThenParentAndParentsChildsAreExists()
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
@@ -84,7 +84,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         }
 
         [Fact]
-        public void IncludeAfterThenInclude_ResultIsSameAsFromEF()
+        public void WhenIncludeAfterThenInclude_ThenResultIsSameAsFromEF()
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
@@ -108,7 +108,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
         }
 
         [Fact]
-        public void IncludeRelatedDataOfEnumerable_RelatedOfEnumerableExists()
+        public void WhenIncludeRelatedDataOfEnumerable_ThenRelatedOfEnumerableExists()
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();

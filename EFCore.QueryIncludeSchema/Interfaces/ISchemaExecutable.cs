@@ -1,4 +1,6 @@
-﻿namespace EFCore.QueryIncludeSchema.Interfaces
+﻿using System.Linq;
+
+namespace EFCore.QueryIncludeSchema.Interfaces
 {
     public interface ISchemaExecutable<TEntity>
         where TEntity : class

@@ -2,7 +2,7 @@
 
 namespace EFCore.QueryIncludeSchema.Data
 {
-    internal record struct SchemaContainer<TEntity> : IQueryIncludable<TEntity>, ISchemaGetable<TEntity>
+    internal struct SchemaContainer<TEntity> : IQueryIncludable<TEntity>, ISchemaGetable<TEntity>
         where TEntity : class
     {
         public ISchemaQueryable<TEntity> Schema { get; set; }
@@ -13,7 +13,7 @@ namespace EFCore.QueryIncludeSchema.Data
         }
     }
 
-    internal record struct ThenIncludeSchemaContainer<TEntity, TProperty> : IQueryThenIncludable<TEntity, TProperty>, ISchemaGetable<TEntity>
+    internal struct ThenIncludeSchemaContainer<TEntity, TProperty> : IQueryThenIncludable<TEntity, TProperty>, ISchemaGetable<TEntity>
         where TEntity : class
     {
         public ISchemaQueryable<TEntity> Schema { get; set; }

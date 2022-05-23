@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using EFCore.QueryIncludeSchema.Data;
 using System.Linq.Expressions;
+using System;
 
 namespace EFCore.QueryIncludeSchema.Interfaces
 {

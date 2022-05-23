@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using EFCore.QueryIncludeSchema.Data;
 using EFCore.QueryIncludeSchema.Interfaces;
+using System.Linq;
 
 namespace EFCore.QueryIncludeSchema
 {
-    internal record struct QueryIncludeSchemaImpl<TEntity> : ISchemaQueryable<TEntity>, ISchemaExecutable<TEntity>, IQueryIncludable<TEntity>
+    internal struct QueryIncludeSchemaImpl<TEntity> : ISchemaQueryable<TEntity>, ISchemaExecutable<TEntity>, IQueryIncludable<TEntity>
         where TEntity : class
     {
         public QueryIncludeSchemaImpl(DbSet<TEntity> query)
