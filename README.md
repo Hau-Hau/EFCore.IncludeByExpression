@@ -5,6 +5,14 @@
 
 This repository provides a library that allows to expose only .Include and .ThenInclude methods.
 
+### Getting started
+
+#### Install from [NuGet](https://www.nuget.org/packages/EFCore.QueryIncludeSchema):
+
+```powershell
+Install-Package EFCore.QueryIncludeSchema  
+```
+
 ### Example Usage
 ```csharp
 using EFCore.QueryIncludeSchema.Interfaces;
