@@ -3,10 +3,10 @@ env:
 # dotnet-framework to dotnet-version maps
   "netstandard2.0": 3.1.x
   "netstandard2.1": 3.1.x
-  "net6.0": 6.0.x
+  "net7.0": 7.0.x
 # dotnet-version to target framework map
   "3.1.x": netcoreapp3.1
-  "6.0.x": net6.0
+  "7.0.x": net7.0
 on:
   push:
     branches: [ main ]
@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [ ubuntu-latest ]
-        dotnet-framework: [ netstandard2.0, netstandard2.1, net6.0 ]
+        dotnet-framework: [ netstandard2.0, netstandard2.1, net7.0 ]
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET
@@ -26,8 +26,8 @@ jobs:
       with:
         dotnet-version: ${{ env[matrix.dotnet-framework] }}
     - name: Build project
-      run: dotnet build ./EFCore.QueryIncludeSchema/EFCore.QueryIncludeSchema.csproj --configuration Release --framework ${{ matrix.dotnet-framework }}
+      run: dotnet build ./EFCore.NavigationPropertyPathSchema/EFCore.NavigationPropertyPathSchema.csproj --configuration Release --framework ${{ matrix.dotnet-framework }}
     - name: Build tests project
-      run: dotnet build ./EFCore.QueryIncludeSchema.Tests.Unit/EFCore.QueryIncludeSchema.Tests.Unit.csproj --configuration Release --framework ${{ env[env[matrix.dotnet-framework]] }}
+      run: dotnet build ./EFCore.NavigationPropertyPathSchema.Tests.Unit/EFCore.NavigationPropertyPathSchema.Tests.Unit.csproj --configuration Release --framework ${{ env[env[matrix.dotnet-framework]] }}
     - name: Test
       run: dotnet test --no-restore --verbosity normal --framework ${{ env[env[matrix.dotnet-framework]] }}
