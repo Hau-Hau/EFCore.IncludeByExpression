@@ -1,6 +1,6 @@
-﻿using EFCore.QueryIncludeSchema.Interfaces;
+﻿using EFCore.NavigationPropertyPathSchema.Abstractions;
 
-namespace EFCore.QueryIncludeSchema.Data
+namespace EFCore.NavigationPropertyPathSchema.Data
 {
     internal struct SchemaContainer<TEntity> : IQueryIncludable<TEntity>, ISchemaGetable<TEntity>
         where TEntity : class

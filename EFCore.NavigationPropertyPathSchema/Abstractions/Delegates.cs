@@ -1,6 +1,4 @@
-﻿using EFCore.QueryIncludeSchema.Interfaces;
-
-namespace EFCore.QueryIncludeSchema
+﻿namespace EFCore.NavigationPropertyPathSchema.Abstractions
 {
     public delegate void IncludePropertyPath<TEntity>(IQueryIncludable<TEntity> query)
         where TEntity : class;

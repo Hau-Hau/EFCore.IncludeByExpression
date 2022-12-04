@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using EFCore.QueryIncludeSchema.Data;
+using EFCore.NavigationPropertyPathSchema.Data;
 using System.Linq.Expressions;
 using System;
 
-namespace EFCore.QueryIncludeSchema.Interfaces
+namespace EFCore.NavigationPropertyPathSchema.Abstractions
 {
     public interface IQueryIncludable<TEntity>
         where TEntity : class

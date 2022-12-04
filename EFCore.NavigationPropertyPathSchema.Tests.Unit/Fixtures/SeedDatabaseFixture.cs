@@ -1,8 +1,8 @@
-﻿using EFCore.QueryIncludeSchema.Tests.Unit.Data;
-using EFCore.QueryIncludeSchema.Tests.Unit.Data.Entieties;
+﻿using EFCore.NavigationPropertyPathSchema.Tests.Unit.Data;
+using EFCore.NavigationPropertyPathSchema.Tests.Unit.Data.Entieties;
 using System.Linq;
 
-namespace EFCore.QueryIncludeSchema.Tests.Unit.Fixtures
+namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
 {
 
     public class SeedDatabaseFixture

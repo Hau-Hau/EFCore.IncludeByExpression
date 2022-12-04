@@ -1,4 +1,4 @@
-﻿namespace EFCore.QueryIncludeSchema.Interfaces
+﻿namespace EFCore.NavigationPropertyPathSchema.Abstractions
 {
     internal interface ISchemaGetable<TEntity>
         where TEntity : class

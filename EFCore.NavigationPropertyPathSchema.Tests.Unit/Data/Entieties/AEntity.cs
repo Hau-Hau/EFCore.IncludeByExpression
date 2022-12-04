@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace EFCore.QueryIncludeSchema.Tests.Unit.Data.Entieties
+namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Data.Entieties
 {
     public class AEntity
     {

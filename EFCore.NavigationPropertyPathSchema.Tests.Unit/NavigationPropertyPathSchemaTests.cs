@@ -1,17 +1,17 @@
+using EFCore.NavigationPropertyPathSchema.Abstractions;
+using EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using EFCore.QueryIncludeSchema.Interfaces;
-using EFCore.QueryIncludeSchema.Tests.Unit.Fixtures;
 using System.Linq;
 using Xunit;
 
-namespace EFCore.QueryIncludeSchema.Tests.Unit
+namespace EFCore.NavigationPropertyPathSchema.Tests.Unit
 {
-    public class QueryIncludeSchemaTests : IClassFixture<SeedDatabaseFixture>
+    public class NavigationPropertyPathSchemaTests : IClassFixture<SeedDatabaseFixture>
     {
         private readonly SeedDatabaseFixture seedDatabaseFixture;
 
-        public QueryIncludeSchemaTests(SeedDatabaseFixture seedDatabaseFixture)
+        public NavigationPropertyPathSchemaTests(SeedDatabaseFixture seedDatabaseFixture)
         {
             this.seedDatabaseFixture = seedDatabaseFixture;
         }
@@ -22,7 +22,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
             var reference = contextReference.Bs.First();
-            var node = QueryIncludeSchema.For(context.Bs).Execute().First();
+            var node = NavigationPropertyPathSchema.For(context.Bs).Execute().First();
             node.Childs.Should().BeNull();
             node.Parent.Should().BeNull();
             node.Should().BeEquivalentTo(reference);
@@ -36,7 +36,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
             var reference = contextReference.Bs
                 .Include(y => y.Parent)
                 .First();
-            var node = QueryIncludeSchema
+            var node = NavigationPropertyPathSchema
                 .For(context.Bs)
                 .Execute(x => x.Include(y => y.Parent))
                 .First();
@@ -52,7 +52,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
             var reference = contextReference.Bs
                 .Include(y => y.Childs)
                 .First();
-            var node = QueryIncludeSchema
+            var node = NavigationPropertyPathSchema
                 .For(context.Bs)
                 .Execute(x => x.Include(y => y.Childs))
                 .First();
@@ -71,7 +71,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
                 .Include(y => y.Parent)
                 .ThenInclude(y => y!.Childs)
                 .First();
-            var node = QueryIncludeSchema
+            var node = NavigationPropertyPathSchema
                 .For(context.Bs)
                 .Execute(x => x
                     .Include(y => y.Parent)
@@ -93,7 +93,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
                 .ThenInclude(y => y!.Childs)
                 .Include(x => x.Childs)
                 .First();
-            var node = QueryIncludeSchema
+            var node = NavigationPropertyPathSchema
                 .For(context.Bs)
                 .Execute(x => x
                     .Include(y => y.Parent)
@@ -119,7 +119,7 @@ namespace EFCore.QueryIncludeSchema.Tests.Unit
                 .ThenInclude(y => y.Childs)
                 .First();
 #pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
-            var node = QueryIncludeSchema
+            var node = NavigationPropertyPathSchema
                 .For(context.As)
                 .Execute(x => x
                     .Include(y => y.Childs)

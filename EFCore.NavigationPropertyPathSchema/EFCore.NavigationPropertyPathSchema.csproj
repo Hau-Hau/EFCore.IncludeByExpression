@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net6.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
 		<LangVersion>9.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageId>EFCore.QueryIncludeSchema</PackageId>
-		<PackageVersion>1.0.0</PackageVersion>
+		<PackageId>EFCore.NavigationPropertyPathSchema</PackageId>
+		<PackageVersion>1.0.1</PackageVersion>
 		<Description>A small package that simplify exposing only .Include and .ThenInclude methods.</Description>
-		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.QueryIncludeSchema</RepositoryUrl>
+		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.NavigationPropertyPathSchema</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
-		<PackageTags>Entity Framework Core entity-framework-core EF Data O/RM EntityFramework EntityFrameworkCore EFCore Query QuerySchema Include ThenInclude</PackageTags>
+		<PackageTags>Entity Framework Core entity-framework-core EF Data O/RM EntityFramework EntityFrameworkCore EFCore NavigationPropertyPath Navigation Property Path Include ThenInclude</PackageTags>
 		<Authors>Piotr Michalewicz</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>

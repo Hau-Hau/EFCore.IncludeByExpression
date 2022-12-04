@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using EFCore.QueryIncludeSchema.Tests.Unit.Data.Entieties;
+using EFCore.NavigationPropertyPathSchema.Tests.Unit.Data.Entieties;
 
-namespace EFCore.QueryIncludeSchema.Tests.Unit.Data
+namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Data
 {
     public class TestAppDbContext : DbContext
     {

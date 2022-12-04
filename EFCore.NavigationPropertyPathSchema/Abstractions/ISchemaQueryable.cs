@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace EFCore.QueryIncludeSchema.Interfaces
+namespace EFCore.NavigationPropertyPathSchema.Abstractions
 {
     internal interface ISchemaQueryable<TEntity>
         where TEntity : class

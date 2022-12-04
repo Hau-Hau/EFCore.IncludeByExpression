@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
-using EFCore.QueryIncludeSchema.Data;
+using EFCore.NavigationPropertyPathSchema.Data;
 using System.Linq.Expressions;
 using System;
 using System.Collections.Generic;
 
-namespace EFCore.QueryIncludeSchema.Interfaces
+namespace EFCore.NavigationPropertyPathSchema.Abstractions
 {
     public interface IQueryThenIncludable<TEntity, out TProperty> : IQueryIncludable<TEntity>
         where TEntity : class

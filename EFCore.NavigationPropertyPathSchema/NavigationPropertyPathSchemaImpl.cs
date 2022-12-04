@@ -1,14 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using EFCore.QueryIncludeSchema.Data;
-using EFCore.QueryIncludeSchema.Interfaces;
+﻿using EFCore.NavigationPropertyPathSchema.Abstractions;
+using EFCore.NavigationPropertyPathSchema.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
-namespace EFCore.QueryIncludeSchema
+namespace EFCore.NavigationPropertyPathSchema
 {
-    internal struct QueryIncludeSchemaImpl<TEntity> : ISchemaQueryable<TEntity>, ISchemaExecutable<TEntity>, IQueryIncludable<TEntity>
+    internal struct NavigationPropertyPathSchemaImpl<TEntity> : ISchemaQueryable<TEntity>, ISchemaExecutable<TEntity>, IQueryIncludable<TEntity>
         where TEntity : class
     {
-        public QueryIncludeSchemaImpl(DbSet<TEntity> query)
+        public NavigationPropertyPathSchemaImpl(DbSet<TEntity> query)
         {
             Query = query.AsQueryable();
         }

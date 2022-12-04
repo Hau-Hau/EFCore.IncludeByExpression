@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.QueryIncludeSchema", "EFCore.QueryIncludeSchema\EFCore.QueryIncludeSchema.csproj", "{250D974E-A753-4029-B42F-376DDCE98E94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.NavigationPropertyPathSchema", "EFCore.NavigationPropertyPathSchema\EFCore.NavigationPropertyPathSchema.csproj", "{250D974E-A753-4029-B42F-376DDCE98E94}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.QueryIncludeSchema.Tests.Unit", "EFCore.QueryIncludeSchema.Tests.Unit\EFCore.QueryIncludeSchema.Tests.Unit.csproj", "{91A3520F-AE67-46E4-82D7-0D5F5C720574}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.NavigationPropertyPathSchema.Tests.Unit", "EFCore.NavigationPropertyPathSchema.Tests.Unit\EFCore.NavigationPropertyPathSchema.Tests.Unit.csproj", "{91A3520F-AE67-46E4-82D7-0D5F5C720574}"
 	ProjectSection(ProjectDependencies) = postProject
 		{250D974E-A753-4029-B42F-376DDCE98E94} = {250D974E-A753-4029-B42F-376DDCE98E94}
 	EndProjectSection

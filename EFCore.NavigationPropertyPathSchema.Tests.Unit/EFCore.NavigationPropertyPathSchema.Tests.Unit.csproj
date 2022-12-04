@@ -100,7 +100,7 @@
 	</Choose>
 
 	<ItemGroup>
-		<ProjectReference Include="..\EFCore.QueryIncludeSchema\EFCore.QueryIncludeSchema.csproj" />
+		<ProjectReference Include="..\EFCore.NavigationPropertyPathSchema\EFCore.NavigationPropertyPathSchema.csproj" />
 	</ItemGroup>
 
 </Project>
