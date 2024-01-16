@@ -15,7 +15,7 @@ Install-Package EFCore.NavigationPropertyPathSchema
 
 ### Example Usage
 ```csharp
-using EFCore.NavigationPropertyPathSchema.Abstractions;
+using EFCore.NavigationPropertyPathSchema;
 ...
 static IEnumerable<Node> GetNodes(IncludePropertyPath<Node>? includePropertyPath = null)
 {
