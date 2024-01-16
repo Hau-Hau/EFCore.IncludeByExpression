@@ -13,7 +13,10 @@ namespace EFCore.NavigationPropertyPathSchema.Abstractions
 
     public static class IQueryIncludableExtensions
     {
-        public static IQueryThenIncludable<TEntity, TProperty> Include<TEntity, TProperty>(this IQueryIncludable<TEntity> source, Expression<Func<TEntity, TProperty>> navigationPropertyPath)
+        public static IQueryThenIncludable<TEntity, TProperty> Include<TEntity, TProperty>(
+            this IQueryIncludable<TEntity> source,
+            Expression<Func<TEntity, TProperty>> navigationPropertyPath
+        )
             where TEntity : class
         {
             var schema = ((ISchemaGetable<TEntity>)source).Schema;

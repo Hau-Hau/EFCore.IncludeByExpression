@@ -5,9 +5,7 @@ namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Data
 {
     public class TestAppDbContext : DbContext
     {
-        public TestAppDbContext()
-        {
-        }
+        public TestAppDbContext() { }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

@@ -3,10 +3,10 @@ env:
 # dotnet-framework to dotnet-version maps
   "netstandard2.0": 3.1.x
   "netstandard2.1": 3.1.x
-  "net7.0": 7.0.x
+  "net8.0": 8.0.x
 # dotnet-version to target framework map
   "3.1.x": netcoreapp3.1
-  "7.0.x": net7.0
+  "8.0.x": net8.0
 on:
   push:
     branches: [ main ]
@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [ ubuntu-latest ]
-        dotnet-framework: [ netstandard2.0, netstandard2.1, net7.0 ]
+        dotnet-framework: [ netstandard2.0, netstandard2.1, net8.0 ]
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET

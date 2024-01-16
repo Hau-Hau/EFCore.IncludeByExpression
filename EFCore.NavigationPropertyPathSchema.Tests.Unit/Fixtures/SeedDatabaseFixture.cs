@@ -4,7 +4,6 @@ using System.Linq;
 
 namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
 {
-
     public class SeedDatabaseFixture
     {
         public TestAppDbContext GetNewContext() => new();
@@ -12,7 +11,8 @@ namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
         private static AEntity CreateA()
         {
             var instance = new AEntity();
-            instance.Childs = new BEntity[] {
+            instance.Childs = new BEntity[]
+            {
                 CreateB(instance),
                 CreateB(instance),
                 CreateB(instance)
@@ -23,7 +23,8 @@ namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
         private static BEntity CreateB(AEntity parent)
         {
             var instance = new BEntity(parent);
-            instance.Childs = new CEntity[] {
+            instance.Childs = new CEntity[]
+            {
                 CreateC(instance),
                 CreateC(instance),
                 CreateC(instance),
@@ -34,7 +35,8 @@ namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
         private static CEntity CreateC(BEntity parent)
         {
             var instance = new CEntity(parent);
-            instance.Childs = new DEntity[] {
+            instance.Childs = new DEntity[]
+            {
                 new DEntity(instance),
                 new DEntity(instance),
                 new DEntity(instance),

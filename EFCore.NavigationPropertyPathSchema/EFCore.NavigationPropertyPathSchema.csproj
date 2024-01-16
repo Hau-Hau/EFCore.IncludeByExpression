@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net6.0;net7.0;net8.0</TargetFrameworks>
 		<LangVersion>9.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
@@ -9,14 +9,19 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.NavigationPropertyPathSchema</PackageId>
-		<PackageVersion>1.0.1</PackageVersion>
+		<PackageVersion>1.0.2</PackageVersion>
 		<Description>A small package that simplify exposing only .Include and .ThenInclude methods.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.NavigationPropertyPathSchema</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
 		<PackageTags>Entity Framework Core entity-framework-core EF Data O/RM EntityFramework EntityFrameworkCore EFCore NavigationPropertyPath Navigation Property Path Include ThenInclude</PackageTags>
 		<Authors>Piotr Michalewicz</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	    <PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="$(SolutionDir)\README.md" Pack="true" PackagePath="/README.md"/>
+	</ItemGroup>
 
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
@@ -24,8 +29,16 @@
 		</AssemblyAttribute>
 	</ItemGroup>
 
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net[6-9].\d')) or $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net\d{2}.\d'))">
-		<DefineConstants>NET6_0_OR_GREATER</DefineConstants>
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
+		<DefineConstants>NET8_0</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net7.0'))">
+		<DefineConstants>NET7_0</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">
+		<DefineConstants>NET6_0</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^netcoreapp3.\d')) or $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net5.0'))">
@@ -39,7 +52,21 @@
 	</Target>
 
 	<Choose>
-		<When Condition="$(DefineConstants.Contains('NET6_0_OR_GREATER'))">
+		<When Condition="$(DefineConstants.Contains('NET8_0'))">
+			<ItemGroup>
+				<PackageReference Include="Microsoft.EntityFrameworkCore">
+					<Version>8.0.1</Version>
+				</PackageReference>
+			</ItemGroup>
+		</When>
+		<When Condition="$(DefineConstants.Contains('NET7_0'))">
+			<ItemGroup>
+				<PackageReference Include="Microsoft.EntityFrameworkCore">
+					<Version>7.0.15</Version>
+				</PackageReference>
+			</ItemGroup>
+		</When>
+		<When Condition="$(DefineConstants.Contains('NET6_0'))">
 			<ItemGroup>
 				<PackageReference Include="Microsoft.EntityFrameworkCore">
 					<Version>6.0.5</Version>
@@ -70,11 +97,11 @@
 								<PackageReference Include="Microsoft.EntityFrameworkCore">
 									<Version>3.1.25</Version>
 								</PackageReference>
-								<PackageReference Include="IsExternalInit" Version="1.0.2">
+								<PackageReference Include="IsExternalInit" Version="1.0.3">
 									<PrivateAssets>all</PrivateAssets>
 									<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 								</PackageReference>
-								<PackageReference Include="Nullable" Version="1.3.0">
+								<PackageReference Include="Nullable" Version="1.3.1">
 									<PrivateAssets>all</PrivateAssets>
 									<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 								</PackageReference>

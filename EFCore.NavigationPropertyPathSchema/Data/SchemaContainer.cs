@@ -13,7 +13,9 @@ namespace EFCore.NavigationPropertyPathSchema.Data
         }
     }
 
-    internal struct ThenIncludeSchemaContainer<TEntity, TProperty> : IQueryThenIncludable<TEntity, TProperty>, ISchemaGetable<TEntity>
+    internal struct ThenIncludeSchemaContainer<TEntity, TProperty>
+        : IQueryThenIncludable<TEntity, TProperty>,
+            ISchemaGetable<TEntity>
         where TEntity : class
     {
         public ISchemaQueryable<TEntity> Schema { get; set; }
