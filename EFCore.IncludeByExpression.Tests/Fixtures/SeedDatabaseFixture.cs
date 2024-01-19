@@ -1,8 +1,8 @@
-﻿using EFCore.NavigationPropertyPathSchema.Tests.Unit.Data;
-using EFCore.NavigationPropertyPathSchema.Tests.Unit.Data.Entieties;
-using System.Linq;
+﻿using System.Linq;
+using EFCore.IncludeByExpression.Tests.Data;
+using EFCore.IncludeByExpression.Tests.Data.Entieties;
 
-namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
+namespace EFCore.IncludeByExpression.Tests.Fixtures
 {
     public class SeedDatabaseFixture
     {
@@ -25,21 +25,21 @@ namespace EFCore.NavigationPropertyPathSchema.Tests.Unit.Fixtures
             var instance = new BEntity(parent);
             instance.Childs = new CEntity[]
             {
-                CreateC(instance),
-                CreateC(instance),
-                CreateC(instance),
+                CreateC(instance, parent),
+                CreateC(instance, parent),
+                CreateC(instance, parent),
             }.ToList();
             return instance;
         }
 
-        private static CEntity CreateC(BEntity parent)
+        private static CEntity CreateC(BEntity parent, AEntity parentAncestor)
         {
-            var instance = new CEntity(parent);
+            var instance = new CEntity(parent, parent.Parent);
             instance.Childs = new DEntity[]
             {
-                new DEntity(instance),
-                new DEntity(instance),
-                new DEntity(instance),
+                new DEntity(instance, parent),
+                new DEntity(instance, parent),
+                new DEntity(instance, parent),
             }.ToList();
             return instance;
         }
