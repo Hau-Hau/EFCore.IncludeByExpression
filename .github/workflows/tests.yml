@@ -25,6 +25,6 @@ jobs:
     - name: Build project
       run: dotnet build ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj --configuration Release --framework ${{ matrix.dotnet-framework }}
     - name: Build tests project
-      run: dotnet build ./EFCore.IncludeByExpression.Tests.Unit/EFCore.IncludeByExpression.Tests.Unit.csproj --configuration Release --framework ${{ env[env[matrix.dotnet-framework]] }}
+      run: dotnet build ./EFCore.IncludeByExpression.Tests/EFCore.IncludeByExpression.Tests.csproj --configuration Release --framework ${{ env[env[matrix.dotnet-framework]] }}
     - name: Test
       run: dotnet test --no-restore --verbosity normal --framework ${{ env[env[matrix.dotnet-framework]] }}
