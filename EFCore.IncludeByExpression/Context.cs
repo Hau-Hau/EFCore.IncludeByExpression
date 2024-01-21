@@ -3,8 +3,7 @@
 namespace EFCore.IncludeByExpression
 {
     internal sealed class Context<TEntity, TProperty>
-        : IContext<TEntity>,
-            IIncludable<TEntity>,
+        : IIncludable<TEntity>,
             IThenIncludable<TEntity, TProperty>
         where TEntity : class
     {
