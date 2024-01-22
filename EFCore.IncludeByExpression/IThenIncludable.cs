@@ -43,10 +43,11 @@ namespace EFCore.IncludeByExpression
         )
             where TEntity : class
         {
-            source.Query = Unsafe
-                .As<IIncludableQueryable<TEntity, TPreviousProperty>>(source.Query)
+            var context = Unsafe.As<IContext<TEntity>>(source);
+            context.Query = Unsafe
+                .As<IIncludableQueryable<TEntity, TPreviousProperty>>(context.Query)
                 .ThenInclude(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
+            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
         }
 
         /// <summary>
@@ -71,10 +72,11 @@ namespace EFCore.IncludeByExpression
         )
             where TEntity : class
         {
-            source.Query = Unsafe
-                .As<IIncludableQueryable<TEntity, IEnumerable<TPreviousProperty>>>(source.Query)
+            var context = Unsafe.As<IContext<TEntity>>(source);
+            context.Query = Unsafe
+                .As<IIncludableQueryable<TEntity, IEnumerable<TPreviousProperty>>>(context.Query)
                 .ThenInclude(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
+            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
         }
     }
 }

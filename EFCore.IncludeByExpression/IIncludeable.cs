@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +13,7 @@ namespace EFCore.IncludeByExpression
     public interface IIncludable<TEntity>
         where TEntity : class
     {
-        IQueryable<TEntity> Query { get; set; }
+        // Serves as a marker for queryable types that support the inclusion of navigation properties.
     }
 
     public static class IncludableExtensions
@@ -37,8 +36,9 @@ namespace EFCore.IncludeByExpression
         )
             where TEntity : class
         {
-            source.Query = source.Query.Include(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
+            var context = Unsafe.As<IContext<TEntity>>(source);
+            context.Query = context.Query.Include(navigationPropertyPath);
+            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
         }
     }
 }
