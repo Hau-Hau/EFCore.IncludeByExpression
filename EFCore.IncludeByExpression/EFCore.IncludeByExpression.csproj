@@ -7,6 +7,10 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
+		<SolutionDir>$(MSBuildThisFileDirectory)..\</SolutionDir>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression</PackageId>
 		<PackageVersion>2.1.0</PackageVersion>
 		<Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
