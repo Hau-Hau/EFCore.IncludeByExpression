@@ -22,6 +22,7 @@ Install-Package EFCore.IncludeByExpression.Abstractions
 ### Example Usage
 ```csharp
 using EFCore.IncludeByExpression;
+using EFCore.IncludeByExpression.Abstractions;
 
 static void Main(string[] args)
 {
