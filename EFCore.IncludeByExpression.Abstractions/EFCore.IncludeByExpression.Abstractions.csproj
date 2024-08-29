@@ -5,9 +5,8 @@
         <IsPackable>true</IsPackable>
     </PropertyGroup>
 
-    <!-- fix for netstandard2.0 -->
-    <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-      <SolutionDir>$(MSBuildThisFileDirectory)..\</SolutionDir>
+    <PropertyGroup>
+        <SolutionDir>$(MSBuildThisFileDirectory)..\</SolutionDir>
     </PropertyGroup>
 
     <PropertyGroup>
