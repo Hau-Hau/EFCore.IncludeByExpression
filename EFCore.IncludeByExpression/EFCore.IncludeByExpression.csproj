@@ -8,7 +8,7 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression</PackageId>
-		<PackageVersion>2.0.2</PackageVersion>
+		<PackageVersion>2.1.0</PackageVersion>
 		<Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
@@ -23,7 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
+		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.0" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
@@ -41,23 +41,17 @@
 	<Choose>
 		<When Condition="$(DefineConstants.Contains('NET8_0'))">
 			<ItemGroup>
-				<PackageReference Include="Microsoft.EntityFrameworkCore">
-					<Version>8.0.8</Version>
-				</PackageReference>
+				<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
 			</ItemGroup>
 		</When>
 		<When Condition="$(DefineConstants.Contains('NET7_0'))">
 			<ItemGroup>
-				<PackageReference Include="Microsoft.EntityFrameworkCore">
-					<Version>7.0.20</Version>
-				</PackageReference>
+				<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
 			</ItemGroup>
 		</When>
 		<When Condition="$(DefineConstants.Contains('NET6_0'))">
 			<ItemGroup>
-				<PackageReference Include="Microsoft.EntityFrameworkCore">
-					<Version>6.0.33</Version>
-				</PackageReference>
+				<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.33" />
 			</ItemGroup>
 		</When>
 	</Choose>
