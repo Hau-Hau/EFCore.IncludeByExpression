@@ -13,6 +13,12 @@ This repository provides a library that allows to build expressions of only `.In
 Install-Package EFCore.IncludeByExpression  
 ```
 
+#### Abstractions can be installed from [NuGet](https://www.nuget.org/packages/EFCore.IncludeByExpression.Abstractions)
+
+```powershell
+Install-Package EFCore.IncludeByExpression.Abstractions
+```
+
 ### Example Usage
 ```csharp
 using EFCore.IncludeByExpression;
