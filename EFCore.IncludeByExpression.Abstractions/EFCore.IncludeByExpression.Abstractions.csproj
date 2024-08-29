@@ -16,4 +16,8 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<None Include="$(SolutionDir)\README.md" Pack="true" PackagePath="/README.md" />
+	</ItemGroup>
+
 </Project>
