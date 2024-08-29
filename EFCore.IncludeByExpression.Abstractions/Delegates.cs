@@ -1,4 +1,4 @@
-﻿namespace EFCore.IncludeByExpression
+﻿namespace EFCore.IncludeByExpression.Abstractions
 {
     /// <summary>
     ///     A lambda expression representing the chain of navigation properties to be included.

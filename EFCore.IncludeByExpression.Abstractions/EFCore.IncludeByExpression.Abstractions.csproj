@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
+
+    <!-- fix for netstandard2.0 -->
+    <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+      <SolutionDir>$(MSBuildThisFileDirectory)..\</SolutionDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PackageId>EFCore.IncludeByExpression.Abstractions</PackageId>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Description>Abstractions for EFCore.IncludeByExpression package.</Description>
+        <RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
+        <RespositoryType>git</RespositoryType>
+        <PackageTags>Entity Framework Core entity-framework-core EF Data O/RM EntityFramework EntityFrameworkCore EFCore NavigationPropertyPath Navigation Property Path Include ThenInclude</PackageTags>
+        <Authors>Piotr Michalewicz</Authors>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(SolutionDir)\README.md" Pack="true" PackagePath="README.md" />
+    </ItemGroup>
+
+</Project>

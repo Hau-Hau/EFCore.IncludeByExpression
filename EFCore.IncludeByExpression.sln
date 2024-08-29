@@ -10,6 +10,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.IncludeByExpression.
 		{250D974E-A753-4029-B42F-376DDCE98E94} = {250D974E-A753-4029-B42F-376DDCE98E94}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj", "{FF525084-4066-41C4-A527-2D48EC5A3302}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +26,10 @@ Global
 		{91A3520F-AE67-46E4-82D7-0D5F5C720574}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91A3520F-AE67-46E4-82D7-0D5F5C720574}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91A3520F-AE67-46E4-82D7-0D5F5C720574}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF525084-4066-41C4-A527-2D48EC5A3302}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF525084-4066-41C4-A527-2D48EC5A3302}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF525084-4066-41C4-A527-2D48EC5A3302}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF525084-4066-41C4-A527-2D48EC5A3302}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

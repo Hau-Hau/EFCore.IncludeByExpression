@@ -1,21 +1,11 @@
-﻿using System;
+﻿using EFCore.IncludeByExpression.Abstractions;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.IncludeByExpression
 {
-    /// <summary>
-    ///     Represents an interface that serves as a marker for queryable types
-    ///     where navigation properties can be explicitly included.
-    /// </summary>
-    /// <typeparam name="TEntity">The type of entity being queried.</typeparam>
-    public interface IIncludable<TEntity>
-        where TEntity : class
-    {
-        // Serves as a marker for queryable types that support the inclusion of navigation properties.
-    }
-
     public static class IncludableExtensions
     {
         /// <summary>
