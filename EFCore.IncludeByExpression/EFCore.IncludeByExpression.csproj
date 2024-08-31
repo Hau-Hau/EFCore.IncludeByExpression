@@ -22,6 +22,10 @@
 		<None Include="$(SolutionDir)\README.md" Pack="true" PackagePath="/README.md" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
+	</ItemGroup>
+
 	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
 		<DefineConstants>NET8_0</DefineConstants>
 	</PropertyGroup>

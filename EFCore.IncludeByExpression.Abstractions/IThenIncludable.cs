@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 
-namespace EFCore.IncludeByExpression
+namespace EFCore.IncludeByExpression.Abstractions
 {
     /// <summary>
     ///     Represents an interface that extends the functionality of <see cref="IIncludable{TEntity}" />,
@@ -43,11 +39,8 @@ namespace EFCore.IncludeByExpression
         )
             where TEntity : class
         {
-            var context = Unsafe.As<IContext<TEntity>>(source);
-            context.Query = Unsafe
-                .As<IIncludableQueryable<TEntity, TPreviousProperty>>(context.Query)
-                .ThenInclude(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
+            var includableService = IncludableServiceFactory.Create<TEntity>();
+            return includableService.ThenInclude(source, navigationPropertyPath);
         }
 
         /// <summary>
@@ -72,11 +65,8 @@ namespace EFCore.IncludeByExpression
         )
             where TEntity : class
         {
-            var context = Unsafe.As<IContext<TEntity>>(source);
-            context.Query = Unsafe
-                .As<IIncludableQueryable<TEntity, IEnumerable<TPreviousProperty>>>(context.Query)
-                .ThenInclude(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
+            var includableService = IncludableServiceFactory.Create<TEntity>();
+            return includableService.ThenIncludeEnumerable(source, navigationPropertyPath);
         }
     }
 }
