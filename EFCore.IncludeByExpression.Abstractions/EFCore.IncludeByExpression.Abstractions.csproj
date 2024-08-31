@@ -8,6 +8,18 @@
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<PackageId>EFCore.IncludeByExpression.Abstractions</PackageId>
+		<PackageVersion>1.0.2</PackageVersion>
+		<Description>Abstractions for EFCore.IncludeByExpression package.</Description>
+		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
+		<RespositoryType>git</RespositoryType>
+		<PackageTags>Entity Framework Core entity-framework-core EF Data O/RM EntityFramework EntityFrameworkCore EFCore NavigationPropertyPath Navigation Property Path Include ThenInclude</PackageTags>
+		<Authors>Piotr Michalewicz</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>EFCore.IncludeByExpression</_Parameter1>
