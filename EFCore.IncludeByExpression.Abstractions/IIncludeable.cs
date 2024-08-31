@@ -1,9 +1,6 @@
-﻿using System;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
 
-namespace EFCore.IncludeByExpression
+namespace EFCore.IncludeByExpression.Abstractions
 {
     /// <summary>
     ///     Represents an interface that serves as a marker for queryable types
@@ -36,9 +33,7 @@ namespace EFCore.IncludeByExpression
         )
             where TEntity : class
         {
-            var context = Unsafe.As<IContext<TEntity>>(source);
-            context.Query = context.Query.Include(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
+            return IncludableServiceProxy.Include<TEntity, TProperty>(source, navigationPropertyPath);
         }
     }
 }

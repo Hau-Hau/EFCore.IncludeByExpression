@@ -18,10 +18,8 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: ${{ env.DOTNET_VERSION  }}
-    - name: Restore dependencies
-      run: dotnet restore
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build ./EFCore.IncludeByExpression.sln --configuration Release
     - name: Collect coverage
       run: dotnet test --no-restore --framework net8.0
         /p:CollectCoverage=true 

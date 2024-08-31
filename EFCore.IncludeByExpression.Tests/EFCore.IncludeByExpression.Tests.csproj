@@ -2,22 +2,14 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-		<LangVersion>9.0</LangVersion>
+		<LangVersion>10.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
-		<DefineConstants>NET8_0</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net7.0'))">
-		<DefineConstants>NET7_0</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">
-		<DefineConstants>NET6_0</DefineConstants>
-	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EFCore.IncludeByExpression\EFCore.IncludeByExpression.csproj" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="coverlet.msbuild" Version="6.0.0">
@@ -33,44 +25,43 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<Choose>
-		<When Condition="$(DefineConstants.Contains('NET8_0'))">
-			<ItemGroup>
-				<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.1" />
-				<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.1">
-					<PrivateAssets>all</PrivateAssets>
-					<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-				</PackageReference>
-				<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.1" />
-				<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.1" />
-			</ItemGroup>
-		</When>
-		<When Condition="$(DefineConstants.Contains('NET7_0'))">
-			<ItemGroup>
-				<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.15" />
-				<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.15">
-					<PrivateAssets>all</PrivateAssets>
-					<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-				</PackageReference>
-				<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.15" />
-				<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.15" />
-			</ItemGroup>
-		</When>
-		<When Condition="$(DefineConstants.Contains('NET6_0'))">
-			<ItemGroup>
-				<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.26" />
-				<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.26">
-					<PrivateAssets>all</PrivateAssets>
-					<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-				</PackageReference>
-				<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.26" />
-				<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.26" />
-			</ItemGroup>
-		</When>
-	</Choose>
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
+		<DefineConstants>NET8_0</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="$(DefineConstants.Contains('NET8_0'))">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.8" />
+	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\EFCore.IncludeByExpression\EFCore.IncludeByExpression.csproj" />
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net7.0'))">
+		<DefineConstants>NET7_0</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="$(DefineConstants.Contains('NET7_0'))">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.20">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.20" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.20" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">
+		<DefineConstants>NET6_0</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="$(DefineConstants.Contains('NET6_0'))">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.33" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.33">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.33" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.33" />
 	</ItemGroup>
 
 </Project>

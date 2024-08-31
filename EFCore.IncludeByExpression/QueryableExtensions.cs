@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using EFCore.IncludeByExpression.Abstractions;
 
 namespace EFCore.IncludeByExpression
 {

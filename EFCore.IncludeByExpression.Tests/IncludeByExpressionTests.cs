@@ -1,5 +1,5 @@
 using System.Linq;
-using EFCore.IncludeByExpression;
+using EFCore.IncludeByExpression.Abstractions;
 using EFCore.IncludeByExpression.Tests.Fixtures;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

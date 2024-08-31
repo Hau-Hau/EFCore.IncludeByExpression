@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
+﻿using System.Linq.Expressions;
 
-namespace EFCore.IncludeByExpression
+namespace EFCore.IncludeByExpression.Abstractions
 {
     /// <summary>
     ///     Represents an interface that extends the functionality of <see cref="IIncludable{TEntity}" />,
@@ -33,21 +28,13 @@ namespace EFCore.IncludeByExpression
         ///     A lambda expression representing the navigation property to be included (<c>t => t.Property1</c>).
         /// </param>
         /// <returns>A IThenIncludable interface.</returns>
-        public static IThenIncludable<TEntity, TProperty> ThenInclude<
-            TEntity,
-            TPreviousProperty,
-            TProperty
-        >(
+        public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
             this IThenIncludable<TEntity, TPreviousProperty?> source,
             in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            var context = Unsafe.As<IContext<TEntity>>(source);
-            context.Query = Unsafe
-                .As<IIncludableQueryable<TEntity, TPreviousProperty>>(context.Query)
-                .ThenInclude(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
+            return IncludableServiceProxy.ThenInclude(source, navigationPropertyPath);
         }
 
         /// <summary>
@@ -62,21 +49,13 @@ namespace EFCore.IncludeByExpression
         ///     A lambda expression representing the navigation property to be included (<c>t => t.Property1</c>).
         /// </param>
         /// <returns>A IThenIncludable interface.</returns>
-        public static IThenIncludable<TEntity, TProperty> ThenInclude<
-            TEntity,
-            TPreviousProperty,
-            TProperty
-        >(
+        public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
             this IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
             in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            var context = Unsafe.As<IContext<TEntity>>(source);
-            context.Query = Unsafe
-                .As<IIncludableQueryable<TEntity, IEnumerable<TPreviousProperty>>>(context.Query)
-                .ThenInclude(navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(context);
+            return IncludableServiceProxy.ThenIncludeEnumerable(source, navigationPropertyPath);
         }
     }
 }
