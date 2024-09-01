@@ -1,5 +1,5 @@
-﻿using EFCore.IncludeByExpression.Abstractions;
-using System.Linq;
+﻿using System.Linq;
+using EFCore.IncludeByExpression.Abstractions;
 
 namespace EFCore.IncludeByExpression
 {

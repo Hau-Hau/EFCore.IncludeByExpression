@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
@@ -34,8 +33,7 @@ namespace EFCore.IncludeByExpression.Abstractions
         )
             where TEntity : class
         {
-            var includableService = IncludableServiceFactory.Create<TEntity>();
-            return includableService.Include(source, navigationPropertyPath);
+            return IncludableServiceProxy.Include<TEntity, TProperty>(source, navigationPropertyPath);
         }
     }
 }
