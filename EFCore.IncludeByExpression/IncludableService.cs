@@ -12,7 +12,7 @@ namespace EFCore.IncludeByExpression
     {
         public static IThenIncludable<TEntity, TNextProperty> Include<TEntity, TNextProperty>(
             IIncludable<TEntity> source,
-            in Expression<Func<TEntity, TNextProperty>> navigationPropertyPath
+            Expression<Func<TEntity, TNextProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
@@ -23,7 +23,7 @@ namespace EFCore.IncludeByExpression
 
         public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
             IThenIncludable<TEntity, TPreviousProperty?> source,
-            in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
+            Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
@@ -36,7 +36,7 @@ namespace EFCore.IncludeByExpression
 
         public static IThenIncludable<TEntity, TProperty> ThenIncludeEnumerable<TEntity, TPreviousProperty, TProperty>(
             IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
-            in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
+            Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {

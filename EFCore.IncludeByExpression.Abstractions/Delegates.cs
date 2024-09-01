@@ -21,7 +21,7 @@ namespace EFCore.IncludeByExpression.Abstractions
 
     internal delegate IThenIncludable<TEntity, TProperty> ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>(
         IThenIncludable<TEntity, TPreviousProperty?> source,
-        in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
+        Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
     )
         where TEntity : class;
 
@@ -31,7 +31,7 @@ namespace EFCore.IncludeByExpression.Abstractions
         TProperty
     >(
         IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
-        in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
+        Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
     )
         where TEntity : class;
 }

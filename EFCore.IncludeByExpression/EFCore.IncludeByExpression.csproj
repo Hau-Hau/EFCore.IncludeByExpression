@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
@@ -16,8 +16,8 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression</PackageId>
-		<PackageVersion>3.0.2</PackageVersion>
-		<Description>A layer for building expressions from .Include and .ThenInclude methods.</Description>
+		<PackageVersion>3.0.3</PackageVersion>
+		<Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
 		<PackageTags>Entity Framework Core entity-framework-core EF Data O/RM EntityFramework EntityFrameworkCore EFCore NavigationPropertyPath Navigation Property Path Include ThenInclude</PackageTags>
@@ -31,7 +31,21 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.3" />
+		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.2" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">
+		<DefineConstants>NET6_0</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="$(DefineConstants.Contains('NET6_0'))">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.33" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net7.0'))">
+		<DefineConstants>NET7_0</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="$(DefineConstants.Contains('NET7_0'))">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
