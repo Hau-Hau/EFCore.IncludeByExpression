@@ -78,7 +78,12 @@ namespace EFCore.IncludeByExpression.Abstractions
         public void Add(TKey key, TValue value)
         {
             EvictCollectedReferences();
-            dictionary.TryAdd(key, new SoftReference<TValue>(value));
+            if (dictionary.ContainsKey(key))
+            {
+                throw new ArgumentException("An element with the same key already exists.");
+            }
+
+            ((IDictionary)dictionary).Add(key, new SoftReference<TValue>(value));
         }
 
         public void Add(KeyValuePair<TKey, TValue> item)
