@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using DotNext.Runtime;
 using EFCore.IncludeByExpression.Abstractions;
 using FluentAssertions;
@@ -66,9 +62,7 @@ namespace EFCore.IncludeByExpression.Tests
         [Fact]
         public void Remove_ShouldRemoveItem()
         {
-            var dict = new SoftConcurrentDictionary<string, object>();
-            var value = new object();
-            dict.Add("key1", value);
+            var dict = new SoftConcurrentDictionary<string, object> { { "key1", new object() } };
             dict.Remove("key1").Should().BeTrue();
             dict.ContainsKey("key1").Should().BeFalse();
         }
