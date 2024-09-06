@@ -1,7 +1,8 @@
-﻿using System.Collections.Concurrent;
-using System.Linq.Expressions;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using FastExpressionCompiler.LightExpression;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
@@ -10,10 +11,12 @@ namespace EFCore.IncludeByExpression.Abstractions
         private static readonly MethodInfo IncludeMethod;
         private static readonly MethodInfo ThenIncludeMethod;
         private static readonly MethodInfo ThenIncludeEnumerableMethod;
-        private static readonly ConcurrentDictionary<(Type, Type), Delegate> IncludeDelegateCache = new();
-        private static readonly ConcurrentDictionary<(Type, Type, Type), Delegate> ThenIncludeDelegateCache = new();
-        private static readonly ConcurrentDictionary<(Type, Type, Type), Delegate> ThenIncludeEnumerableDelegateCache =
-            new();
+        private static readonly SoftConcurrentDictionary<(Type, Type), Delegate> IncludeDelegateCache = new();
+        private static readonly SoftConcurrentDictionary<(Type, Type, Type), Delegate> ThenIncludeDelegateCache = new();
+        private static readonly SoftConcurrentDictionary<
+            (Type, Type, Type),
+            Delegate
+        > ThenIncludeEnumerableDelegateCache = new();
 
         static IncludableServiceProxy()
         {
@@ -34,7 +37,7 @@ namespace EFCore.IncludeByExpression.Abstractions
 
         public static IThenIncludable<TEntity, TProperty> Include<TEntity, TProperty>(
             IIncludable<TEntity> source,
-            in Expression<Func<TEntity, TProperty>> navigationPropertyPath
+            in System.Linq.Expressions.Expression<Func<TEntity, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
@@ -45,12 +48,16 @@ namespace EFCore.IncludeByExpression.Abstractions
                     var genericMethod = IncludeMethod.MakeGenericMethod(typeof(TEntity), typeof(TProperty));
                     var sourceParam = Expression.Parameter(typeof(IIncludable<TEntity>), "source");
                     var pathParam = Expression.Parameter(
-                        typeof(Expression<Func<TEntity, TProperty>>),
+                        typeof(System.Linq.Expressions.Expression<Func<TEntity, TProperty>>),
                         "navigationPropertyPath"
                     );
                     var callExpression = Expression.Call(genericMethod, sourceParam, pathParam);
-                    var lambda = Expression.Lambda(callExpression, sourceParam, pathParam);
-                    return lambda.Compile();
+                    var lambda = Expression.Lambda<IncludeDelegate<TEntity, TProperty>>(
+                        callExpression,
+                        new List<ParameterExpression>() { sourceParam, pathParam }.AsReadOnly(),
+                        typeof(IThenIncludable<TEntity, TProperty>)
+                    );
+                    return lambda.TryCompileWithoutClosure<IncludeDelegate<TEntity, TProperty>>();
                 }
             );
             return Unsafe
@@ -60,7 +67,7 @@ namespace EFCore.IncludeByExpression.Abstractions
 
         public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
             IThenIncludable<TEntity, TPreviousProperty?> source,
-            in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
+            in System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
@@ -78,12 +85,18 @@ namespace EFCore.IncludeByExpression.Abstractions
                         "source"
                     );
                     var pathParam = Expression.Parameter(
-                        typeof(Expression<Func<TPreviousProperty, TProperty>>),
+                        typeof(System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>>),
                         "navigationPropertyPath"
                     );
                     var callExpression = Expression.Call(genericMethod, sourceParam, pathParam);
-                    var lambda = Expression.Lambda(callExpression, sourceParam, pathParam);
-                    return lambda.Compile();
+                    var lambda = Expression.Lambda<ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>>(
+                        callExpression,
+                        new List<ParameterExpression>() { sourceParam, pathParam }.AsReadOnly(),
+                        typeof(IThenIncludable<TEntity, TProperty>)
+                    );
+                    return lambda.TryCompileWithoutClosure<
+                        ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>
+                    >();
                 }
             );
             return Unsafe
@@ -93,7 +106,7 @@ namespace EFCore.IncludeByExpression.Abstractions
 
         public static IThenIncludable<TEntity, TProperty> ThenIncludeEnumerable<TEntity, TPreviousProperty, TProperty>(
             IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
-            in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
+            in System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
@@ -111,12 +124,20 @@ namespace EFCore.IncludeByExpression.Abstractions
                         "source"
                     );
                     var pathParam = Expression.Parameter(
-                        typeof(Expression<Func<TPreviousProperty, TProperty>>),
+                        typeof(System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>>),
                         "navigationPropertyPath"
                     );
                     var callExpression = Expression.Call(genericMethod, sourceParam, pathParam);
-                    var lambda = Expression.Lambda(callExpression, sourceParam, pathParam);
-                    return lambda.Compile();
+                    var lambda = Expression.Lambda<
+                        ThenIncludeEnumerableDelegate<TEntity, TPreviousProperty, TProperty>
+                    >(
+                        callExpression,
+                        new List<ParameterExpression>() { sourceParam, pathParam }.AsReadOnly(),
+                        typeof(IThenIncludable<TEntity, TProperty>)
+                    );
+                    return lambda.TryCompileWithoutClosure<
+                        ThenIncludeEnumerableDelegate<TEntity, TPreviousProperty, TProperty>
+                    >();
                 }
             );
             return Unsafe

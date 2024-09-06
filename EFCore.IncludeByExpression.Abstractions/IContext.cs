@@ -1,4 +1,6 @@
-﻿namespace EFCore.IncludeByExpression.Abstractions
+﻿using System.Linq;
+
+namespace EFCore.IncludeByExpression.Abstractions
 {
     internal interface IContext<TEntity>
     {
