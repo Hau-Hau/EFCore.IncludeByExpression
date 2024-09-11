@@ -33,11 +33,11 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
-		<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
+		<!--<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />-->
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.4" />
+	<ItemGroup>
+		<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">

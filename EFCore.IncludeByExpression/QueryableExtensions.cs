@@ -30,7 +30,7 @@ namespace EFCore.IncludeByExpression
 
             var context = new Context<TEntity, TEntity>(source);
             navigationPropertyPath?.Invoke(context);
-            return Unsafe.As<IQueryable<TEntity>>(context.Query);
+            return (IQueryable<TEntity>)context.Query;
         }
     }
 }
