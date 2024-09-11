@@ -1,4 +1,6 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
@@ -13,25 +15,26 @@ namespace EFCore.IncludeByExpression.Abstractions
     public delegate void NavigationPropertyPath<TEntity>(IIncludable<TEntity> query)
         where TEntity : class;
 
-    internal delegate IThenIncludable<TEntity, TProperty> IncludeDelegate<TEntity, TProperty>(
-        IIncludable<TEntity> source,
-        Expression<Func<TEntity, TProperty>> navigationPropertyPath
-    )
-        where TEntity : class;
+    internal delegate void IncludeDelegate(
+        Type entityType,
+        Type propertyType,
+        IContext source,
+        LambdaExpression navigationPropertyPath
+    );
 
-    internal delegate IThenIncludable<TEntity, TProperty> ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>(
-        IThenIncludable<TEntity, TPreviousProperty?> source,
-        Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
-    )
-        where TEntity : class;
+    internal delegate void ThenIncludeReferenceDelegate(
+        Type entityType,
+        Type previousPropertyType,
+        Type propertyType,
+        IContext context,
+        LambdaExpression navigationPropertyPath
+    );
 
-    internal delegate IThenIncludable<TEntity, TProperty> ThenIncludeEnumerableDelegate<
-        TEntity,
-        TPreviousProperty,
-        TProperty
-    >(
-        IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
-        Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
-    )
-        where TEntity : class;
+    internal delegate void ThenIncludeEnumerableDelegate(
+        Type entityType,
+        Type previousPropertyType,
+        Type propertyType,
+        IContext context,
+        LambdaExpression navigationPropertyPath
+    );
 }

@@ -4,7 +4,7 @@ using EFCore.IncludeByExpression.Abstractions;
 namespace EFCore.IncludeByExpression
 {
     internal sealed class Context<TEntity, TProperty>
-        : IContext<TEntity>,
+        : IContext,
             IIncludable<TEntity>,
             IThenIncludable<TEntity, TProperty>
         where TEntity : class
@@ -14,6 +14,6 @@ namespace EFCore.IncludeByExpression
             Query = query;
         }
 
-        public IQueryable<TEntity> Query { get; set; }
+        public IQueryable Query { get; set; }
     }
 }

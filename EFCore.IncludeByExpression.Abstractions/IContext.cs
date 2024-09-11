@@ -1,7 +1,9 @@
-﻿namespace EFCore.IncludeByExpression.Abstractions
+﻿using System.Linq;
+
+namespace EFCore.IncludeByExpression.Abstractions
 {
-    internal interface IContext<TEntity>
+    internal interface IContext
     {
-        IQueryable<TEntity> Query { get; set; }
+        IQueryable Query { get; set; }
     }
 }

@@ -44,10 +44,7 @@ namespace EFCore.IncludeByExpression.Tests
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
-            var reference = contextReference
-                .Ds.Include(x => x.Parent)
-                .Include(x => x.ParentAncestor)
-                .First();
+            var reference = contextReference.Ds.Include(x => x.Parent).Include(x => x.ParentAncestor).First();
             var node = context
                 .Ds.IncludeByExpression(x => x.Include(y => y.Parent))
                 .IncludeByExpression(x => x.Include(y => y.ParentAncestor))
@@ -72,30 +69,20 @@ namespace EFCore.IncludeByExpression.Tests
             var node = context
                 .Ds.IncludeByExpression(x => x.Include(y => y.Childs))
                 .IncludeByExpression(x => x.Include(y => y.Parent).ThenInclude(x => x.Childs))
-                .IncludeByExpression(x =>
-                    x.Include(y => y.ParentAncestor).ThenInclude(x => x.Childs)
-                )
+                .IncludeByExpression(x => x.Include(y => y.ParentAncestor).ThenInclude(x => x.Childs))
                 .First();
             node.Childs.Should().NotBeNullOrEmpty();
-            node.Childs!.First()
-                .Should()
-                .BeEquivalentTo(reference!.Childs!.First(), x => x.IgnoringCyclicReferences());
+            node.Childs!.First().Should().BeEquivalentTo(reference!.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.Parent.Should().NotBeNull();
             node.Parent.Childs.Should().NotBeNullOrEmpty();
             node.Parent.Childs!.First()
                 .Should()
-                .BeEquivalentTo(
-                    reference!.Parent.Childs!.First(),
-                    x => x.IgnoringCyclicReferences()
-                );
+                .BeEquivalentTo(reference!.Parent.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.ParentAncestor.Should().NotBeNull();
             node.ParentAncestor.Childs.Should().NotBeNullOrEmpty();
             node.ParentAncestor.Childs!.First()
                 .Should()
-                .BeEquivalentTo(
-                    reference!.ParentAncestor.Childs!.First(),
-                    x => x.IgnoringCyclicReferences()
-                );
+                .BeEquivalentTo(reference!.ParentAncestor.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.Should().BeEquivalentTo(reference, x => x.IgnoringCyclicReferences());
         }
 
@@ -108,9 +95,7 @@ namespace EFCore.IncludeByExpression.Tests
             var node = context.Bs.IncludeByExpression(x => x.Include(y => y.Childs)).First();
             node.Parent.Should().BeNull();
             node.Childs.Should().NotBeNullOrEmpty();
-            node.Childs!.First()
-                .Should()
-                .BeEquivalentTo(reference!.Childs!.First(), x => x.IgnoringCyclicReferences());
+            node.Childs!.First().Should().BeEquivalentTo(reference!.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.Should().BeEquivalentTo(reference, x => x.IgnoringCyclicReferences());
         }
 
@@ -119,21 +104,13 @@ namespace EFCore.IncludeByExpression.Tests
         {
             using var contextReference = seedDatabaseFixture.GetNewContext();
             using var context = seedDatabaseFixture.GetNewContext();
-            var reference = contextReference
-                .Bs.Include(y => y.Parent)
-                .ThenInclude(y => y!.Childs)
-                .First();
-            var node = context
-                .Bs.IncludeByExpression(x => x.Include(y => y.Parent).ThenInclude(y => y.Childs))
-                .First();
+            var reference = contextReference.Bs.Include(y => y.Parent).ThenInclude(y => y!.Childs).First();
+            var node = context.Bs.IncludeByExpression(x => x.Include(y => y.Parent).ThenInclude(y => y.Childs)).First();
             node.Parent.Should().NotBeNull();
             node.Parent!.Childs.Should().NotBeNullOrEmpty();
             node.Parent!.Childs!.First()
                 .Should()
-                .BeEquivalentTo(
-                    reference.Parent!.Childs!.First(),
-                    x => x.IgnoringCyclicReferences()
-                );
+                .BeEquivalentTo(reference.Parent!.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.Should().BeEquivalentTo(reference, x => x.IgnoringCyclicReferences());
         }
 
@@ -148,19 +125,14 @@ namespace EFCore.IncludeByExpression.Tests
                 .Include(x => x.Childs)
                 .First();
             var node = context
-                .Bs.IncludeByExpression(x =>
-                    x.Include(y => y.Parent).ThenInclude(y => y.Childs).Include(x => x.Childs)
-                )
+                .Bs.IncludeByExpression(x => x.Include(y => y.Parent).ThenInclude(y => y.Childs).Include(x => x.Childs))
                 .First();
             node.Parent.Should().NotBeNull();
             node.Childs.Should().NotBeNullOrEmpty();
             node.Parent!.Childs.Should().NotBeNullOrEmpty();
             node.Parent!.Childs!.First()
                 .Should()
-                .BeEquivalentTo(
-                    reference.Parent!.Childs!.First(),
-                    x => x.IgnoringCyclicReferences()
-                );
+                .BeEquivalentTo(reference.Parent!.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.Should().BeEquivalentTo(reference, x => x.IgnoringCyclicReferences());
         }
 
@@ -181,14 +153,8 @@ namespace EFCore.IncludeByExpression.Tests
                 )
                 .First();
 #pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
-            node.Childs!.First()!
-                .Parent!.Childs!.First()
-                .Childs!.First()
-                .Childs.Should()
-                .NotBeNullOrEmpty();
-            node.Childs!.First()
-                .Should()
-                .BeEquivalentTo(reference.Childs!.First(), x => x.IgnoringCyclicReferences());
+            node.Childs!.First()!.Parent!.Childs!.First().Childs!.First().Childs.Should().NotBeNullOrEmpty();
+            node.Childs!.First().Should().BeEquivalentTo(reference.Childs!.First(), x => x.IgnoringCyclicReferences());
             node.Should().BeEquivalentTo(reference, x => x.IgnoringCyclicReferences());
         }
     }
