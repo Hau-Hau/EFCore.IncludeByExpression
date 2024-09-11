@@ -16,7 +16,7 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression</PackageId>
-		<PackageVersion>3.0.3</PackageVersion>
+		<PackageVersion>3.0.4</PackageVersion>
 		<Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
@@ -33,11 +33,11 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
-		<!--<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />-->
+		<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
+		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.5" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">

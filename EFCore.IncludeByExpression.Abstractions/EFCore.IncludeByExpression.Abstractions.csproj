@@ -15,7 +15,7 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression.Abstractions</PackageId>
-		<PackageVersion>1.0.4</PackageVersion>
+		<PackageVersion>1.0.5</PackageVersion>
 		<Description>Abstractions for EFCore.IncludeByExpression package.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
@@ -35,7 +35,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FastExpressionCompiler.LightExpression" Version="4.2.1" />
 		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
 	</ItemGroup>
 
