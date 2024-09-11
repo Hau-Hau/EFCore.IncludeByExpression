@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
+    public interface IIncludable { }
+
     /// <summary>
     ///     Represents an interface that serves as a marker for queryable types
     ///     where navigation properties can be explicitly included.
     /// </summary>
     /// <typeparam name="TEntity">The type of entity being queried.</typeparam>
-    public interface IIncludable<TEntity>
+    public interface IIncludable<TEntity> : IIncludable
         where TEntity : class
     {
         // Serves as a marker for queryable types that support the inclusion of navigation properties.
@@ -34,7 +37,8 @@ namespace EFCore.IncludeByExpression.Abstractions
         )
             where TEntity : class
         {
-            return IncludableServiceProxy.Include<TEntity, TProperty>(source, navigationPropertyPath);
+            IncludableServiceProxy.Include<TEntity, TProperty>(source, navigationPropertyPath);
+            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
         }
     }
 }

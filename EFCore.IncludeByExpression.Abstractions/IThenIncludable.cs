@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
@@ -31,12 +32,13 @@ namespace EFCore.IncludeByExpression.Abstractions
         /// </param>
         /// <returns>A IThenIncludable interface.</returns>
         public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
-            this IThenIncludable<TEntity, TPreviousProperty?> source,
+            this IThenIncludable<TEntity, TPreviousProperty> source,
             in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            return IncludableServiceProxy.ThenInclude(source, navigationPropertyPath);
+            IncludableServiceProxy.ThenIncludeReference(source, navigationPropertyPath);
+            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
         }
 
         /// <summary>
@@ -52,12 +54,13 @@ namespace EFCore.IncludeByExpression.Abstractions
         /// </param>
         /// <returns>A IThenIncludable interface.</returns>
         public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
-            this IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
+            this IThenIncludable<TEntity, IEnumerable<TPreviousProperty>> source,
             in Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            return IncludableServiceProxy.ThenIncludeEnumerable(source, navigationPropertyPath);
+            IncludableServiceProxy.ThenIncludeEnumerable(source, navigationPropertyPath);
+            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
         }
     }
 }

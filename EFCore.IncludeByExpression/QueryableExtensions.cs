@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Runtime.CompilerServices;
 using EFCore.IncludeByExpression.Abstractions;
 
 namespace EFCore.IncludeByExpression
@@ -29,7 +30,7 @@ namespace EFCore.IncludeByExpression
 
             var context = new Context<TEntity, TEntity>(source);
             navigationPropertyPath?.Invoke(context);
-            return context.Query;
+            return Unsafe.As<IQueryable<TEntity>>(context.Query);
         }
     }
 }

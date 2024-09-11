@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using FastExpressionCompiler.LightExpression;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
@@ -11,12 +11,13 @@ namespace EFCore.IncludeByExpression.Abstractions
         private static readonly MethodInfo IncludeMethod;
         private static readonly MethodInfo ThenIncludeMethod;
         private static readonly MethodInfo ThenIncludeEnumerableMethod;
-        private static readonly SoftConcurrentDictionary<(Type, Type), Delegate> IncludeDelegateCache = new();
-        private static readonly SoftConcurrentDictionary<(Type, Type, Type), Delegate> ThenIncludeDelegateCache = new();
-        private static readonly SoftConcurrentDictionary<
-            (Type, Type, Type),
-            Delegate
-        > ThenIncludeEnumerableDelegateCache = new();
+
+        //private static readonly SoftConcurrentDictionary<(Type, Type), Delegate> IncludeDelegateCache = new();
+        //private static readonly SoftConcurrentDictionary<(Type, Type, Type), Delegate> ThenIncludeDelegateCache = new();
+        //private static readonly SoftConcurrentDictionary<
+        //    (Type, Type, Type),
+        //    Delegate
+        //> ThenIncludeEnumerableDelegateCache = new();
 
         static IncludableServiceProxy()
         {
@@ -28,121 +29,130 @@ namespace EFCore.IncludeByExpression.Abstractions
                 serviceType.GetMethod("Include", BindingFlags.Public | BindingFlags.Static)
                 ?? throw new InvalidOperationException("Include method not found.");
             ThenIncludeMethod =
-                serviceType.GetMethod(name: "ThenInclude", bindingAttr: BindingFlags.Public | BindingFlags.Static)
-                ?? throw new InvalidOperationException("ThenInclude method not found.");
+                serviceType.GetMethod(
+                    name: "ThenIncludeReference",
+                    bindingAttr: BindingFlags.Public | BindingFlags.Static
+                ) ?? throw new InvalidOperationException("ThenInclude method not found.");
             ThenIncludeEnumerableMethod =
                 serviceType.GetMethod("ThenIncludeEnumerable", BindingFlags.Public | BindingFlags.Static)
                 ?? throw new InvalidOperationException("ThenIncludeEnumerable method not found.");
         }
 
-        public static IThenIncludable<TEntity, TProperty> Include<TEntity, TProperty>(
+        public static void Include<TEntity, TProperty>(
             IIncludable<TEntity> source,
             in System.Linq.Expressions.Expression<Func<TEntity, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            var includeDelegate = IncludeDelegateCache.GetOrAdd(
-                (typeof(TEntity), typeof(TProperty)),
-                _ =>
-                {
-                    var genericMethod = IncludeMethod.MakeGenericMethod(typeof(TEntity), typeof(TProperty));
-                    var sourceParam = Expression.Parameter(typeof(IIncludable<TEntity>), "source");
-                    var pathParam = Expression.Parameter(
-                        typeof(System.Linq.Expressions.Expression<Func<TEntity, TProperty>>),
-                        "navigationPropertyPath"
-                    );
-                    var callExpression = Expression.Call(genericMethod, sourceParam, pathParam);
-                    var lambda = Expression.Lambda<IncludeDelegate<TEntity, TProperty>>(
-                        callExpression,
-                        new List<ParameterExpression>() { sourceParam, pathParam }.AsReadOnly(),
-                        typeof(IThenIncludable<TEntity, TProperty>)
-                    );
-                    return lambda.TryCompileWithoutClosure<IncludeDelegate<TEntity, TProperty>>();
-                }
+            var entityTypeParam = Expression.Parameter(typeof(Type), "entityType");
+            var propertyTypeParam = Expression.Parameter(typeof(Type), "propertyType");
+            var contextParam = Expression.Parameter(typeof(IContext), "context");
+            var pathParam = Expression.Parameter(typeof(LambdaExpression), "navigationPropertyPath");
+            var callExpression = Expression.Call(
+                IncludeMethod,
+                entityTypeParam,
+                propertyTypeParam,
+                contextParam,
+                pathParam
             );
-            return Unsafe
-                .As<IncludeDelegate<TEntity, TProperty>>(includeDelegate)
-                .Invoke(source, navigationPropertyPath);
+            var lambda = Expression.Lambda<IncludeDelegate>(
+                callExpression,
+                new List<ParameterExpression>()
+                {
+                    entityTypeParam,
+                    propertyTypeParam,
+                    contextParam,
+                    pathParam,
+                }.AsReadOnly()
+            );
+            var includeDelegate = lambda.Compile();
+            includeDelegate.Invoke(
+                typeof(TEntity),
+                typeof(TProperty),
+                Unsafe.As<IContext>(source),
+                navigationPropertyPath
+            );
         }
 
-        public static IThenIncludable<TEntity, TProperty> ThenInclude<TEntity, TPreviousProperty, TProperty>(
-            IThenIncludable<TEntity, TPreviousProperty?> source,
+        public static void ThenIncludeReference<TEntity, TPreviousProperty, TProperty>(
+            IThenIncludable<TEntity, TPreviousProperty> source,
             in System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            var thenIncludeDelegate = ThenIncludeDelegateCache.GetOrAdd(
-                (typeof(TEntity), typeof(TPreviousProperty), typeof(TProperty)),
-                _ =>
-                {
-                    var genericMethod = ThenIncludeMethod.MakeGenericMethod(
-                        typeof(TEntity),
-                        typeof(TPreviousProperty),
-                        typeof(TProperty)
-                    );
-                    var sourceParam = Expression.Parameter(
-                        typeof(IThenIncludable<TEntity, TPreviousProperty>),
-                        "source"
-                    );
-                    var pathParam = Expression.Parameter(
-                        typeof(System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>>),
-                        "navigationPropertyPath"
-                    );
-                    var callExpression = Expression.Call(genericMethod, sourceParam, pathParam);
-                    var lambda = Expression.Lambda<ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>>(
-                        callExpression,
-                        new List<ParameterExpression>() { sourceParam, pathParam }.AsReadOnly(),
-                        typeof(IThenIncludable<TEntity, TProperty>)
-                    );
-                    return lambda.TryCompileWithoutClosure<
-                        ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>
-                    >();
-                }
+            var entityTypeParam = Expression.Parameter(typeof(Type), "entityType");
+            var previousPropertyTypeParam = Expression.Parameter(typeof(Type), "previousPropertyType");
+            var propertyTypeParam = Expression.Parameter(typeof(Type), "propertyType");
+            var contextParam = Expression.Parameter(typeof(IContext), "context");
+            var pathParam = Expression.Parameter(typeof(LambdaExpression), "navigationPropertyPath");
+            var callExpression = Expression.Call(
+                ThenIncludeMethod,
+                entityTypeParam,
+                previousPropertyTypeParam,
+                propertyTypeParam,
+                contextParam,
+                pathParam
             );
-            return Unsafe
-                .As<ThenIncludeDelegate<TEntity, TPreviousProperty, TProperty>>(thenIncludeDelegate)
-                .Invoke(source, navigationPropertyPath);
+            var lambda = Expression.Lambda<ThenIncludeReferenceDelegate>(
+                callExpression,
+                new List<ParameterExpression>()
+                {
+                    entityTypeParam,
+                    previousPropertyTypeParam,
+                    propertyTypeParam,
+                    contextParam,
+                    pathParam,
+                }.AsReadOnly()
+            );
+            var thenIncludeDelegate = lambda.Compile();
+            thenIncludeDelegate.Invoke(
+                typeof(TEntity),
+                typeof(TPreviousProperty),
+                typeof(TProperty),
+                Unsafe.As<IContext>(source),
+                navigationPropertyPath
+            );
         }
 
-        public static IThenIncludable<TEntity, TProperty> ThenIncludeEnumerable<TEntity, TPreviousProperty, TProperty>(
-            IThenIncludable<TEntity, IEnumerable<TPreviousProperty>?> source,
+        public static void ThenIncludeEnumerable<TEntity, TPreviousProperty, TProperty>(
+            IThenIncludable<TEntity, IEnumerable<TPreviousProperty>> source,
             in System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>> navigationPropertyPath
         )
             where TEntity : class
         {
-            var thenIncludeEnumerableDelegate = ThenIncludeEnumerableDelegateCache.GetOrAdd(
-                (typeof(TEntity), typeof(TPreviousProperty), typeof(TProperty)),
-                _ =>
-                {
-                    var genericMethod = ThenIncludeEnumerableMethod.MakeGenericMethod(
-                        typeof(TEntity),
-                        typeof(TPreviousProperty),
-                        typeof(TProperty)
-                    );
-                    var sourceParam = Expression.Parameter(
-                        typeof(IThenIncludable<TEntity, IEnumerable<TPreviousProperty>>),
-                        "source"
-                    );
-                    var pathParam = Expression.Parameter(
-                        typeof(System.Linq.Expressions.Expression<Func<TPreviousProperty, TProperty>>),
-                        "navigationPropertyPath"
-                    );
-                    var callExpression = Expression.Call(genericMethod, sourceParam, pathParam);
-                    var lambda = Expression.Lambda<
-                        ThenIncludeEnumerableDelegate<TEntity, TPreviousProperty, TProperty>
-                    >(
-                        callExpression,
-                        new List<ParameterExpression>() { sourceParam, pathParam }.AsReadOnly(),
-                        typeof(IThenIncludable<TEntity, TProperty>)
-                    );
-                    return lambda.TryCompileWithoutClosure<
-                        ThenIncludeEnumerableDelegate<TEntity, TPreviousProperty, TProperty>
-                    >();
-                }
+            var entityTypeParam = Expression.Parameter(typeof(Type), "entityType");
+            var previousPropertyTypeParam = Expression.Parameter(typeof(Type), "previousPropertyType");
+            var propertyTypeParam = Expression.Parameter(typeof(Type), "propertyType");
+
+            var contextParam = Expression.Parameter(typeof(IContext), "context");
+            var pathParam = Expression.Parameter(typeof(LambdaExpression), "navigationPropertyPath");
+            var callExpression = Expression.Call(
+                ThenIncludeEnumerableMethod,
+                entityTypeParam,
+                previousPropertyTypeParam,
+                propertyTypeParam,
+                contextParam,
+                pathParam
             );
-            return Unsafe
-                .As<ThenIncludeEnumerableDelegate<TEntity, TPreviousProperty, TProperty>>(thenIncludeEnumerableDelegate)
-                .Invoke(source, navigationPropertyPath);
+            var lambda = Expression.Lambda<ThenIncludeEnumerableDelegate>(
+                callExpression,
+                new List<ParameterExpression>()
+                {
+                    entityTypeParam,
+                    previousPropertyTypeParam,
+                    propertyTypeParam,
+                    contextParam,
+                    pathParam,
+                }.AsReadOnly()
+            );
+            var thenIncludeEnumerableDelegate = lambda.Compile();
+            thenIncludeEnumerableDelegate.Invoke(
+                typeof(TEntity),
+                typeof(TPreviousProperty),
+                typeof(TProperty),
+                Unsafe.As<IContext>(source),
+                navigationPropertyPath
+            );
         }
     }
 }
