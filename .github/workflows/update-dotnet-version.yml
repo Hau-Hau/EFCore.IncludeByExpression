@@ -119,7 +119,7 @@ jobs:
 
   status-tracker-lib:
     needs: [update-dotnet-lib]
-    if: ${{ !cancelled() }}
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       completed: ${{ steps.set-status.outputs.value }}
@@ -173,7 +173,7 @@ jobs:
 
   status-tracker-abstractions:
     needs: [update-dotnet-abstractions]
-    if: ${{ !cancelled() }}
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       completed: ${{ steps.set-status.outputs.value }}
@@ -226,7 +226,7 @@ jobs:
 
   status-tracker-pipelines:
     needs: [update-pipelines]
-    if: ${{ !cancelled() }}
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       completed: ${{ steps.set-status.outputs.value }}
@@ -242,7 +242,7 @@ jobs:
       status-tracker-abstractions,
       status-tracker-pipelines,
     ]
-    if: ${{ !cancelled() }} && contains(needs.*.outputs.completed, 'true') 
+    if: always() && contains(needs.*.outputs.completed, 'true') 
     runs-on: ubuntu-latest
     outputs:
       result: ${{ steps.set-status.outputs.value }}
@@ -269,7 +269,7 @@ jobs:
         init,
         collect
     ]
-    if: ${{ !cancelled() }} && needs.collect.outputs.result == 'true'
+    if: always() && needs.collect.outputs.result == 'true'
     runs-on: ubuntu-latest
     steps:
         - uses: actions/checkout@v4
