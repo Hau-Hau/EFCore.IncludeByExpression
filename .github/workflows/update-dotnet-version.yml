@@ -103,7 +103,7 @@ jobs:
           target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
       - uses: ./.github/actions/update-dotnet-version
         with:
-          project: ${{ steps.set-project-name.outputs.value }}.Test
+          project: ${{ steps.set-project-name.outputs.value }}.Tests
           target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
       - uses: ./.github/actions/commit-changes
         with:
