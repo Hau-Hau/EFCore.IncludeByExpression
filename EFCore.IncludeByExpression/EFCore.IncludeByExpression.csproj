@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
@@ -16,7 +16,7 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression</PackageId>
-		<PackageVersion>3.0.4</PackageVersion>
+		<PackageVersion>8.0.0</PackageVersion>
 		<Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
@@ -32,33 +32,9 @@
 		</AssemblyAttribute>
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
-		<ProjectReference Include="..\EFCore.IncludeByExpression.Abstractions\EFCore.IncludeByExpression.Abstractions.csproj" />
-	</ItemGroup>
-
 	<ItemGroup>
-		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.5" />
-	</ItemGroup>
-
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net6.0'))">
-		<DefineConstants>NET6_0</DefineConstants>
-	</PropertyGroup>
-	<ItemGroup Condition="$(DefineConstants.Contains('NET6_0'))">
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.33" />
-	</ItemGroup>
-
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net7.0'))">
-		<DefineConstants>NET7_0</DefineConstants>
-	</PropertyGroup>
-	<ItemGroup Condition="$(DefineConstants.Contains('NET7_0'))">
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
-	</ItemGroup>
-
-	<PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net8.0'))">
-		<DefineConstants>NET8_0</DefineConstants>
-	</PropertyGroup>
-	<ItemGroup Condition="$(DefineConstants.Contains('NET8_0'))">
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.5" />
 	</ItemGroup>
 
 </Project>

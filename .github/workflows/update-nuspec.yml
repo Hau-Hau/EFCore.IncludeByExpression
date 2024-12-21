@@ -166,8 +166,6 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           project: ${{ steps.set-project-name.outputs.value }}
-          external-dependencies-sources: |
-            EncryptedConfigValue
           additional-files: |
             ./Readme.md
       - uses: ./.github/actions/commit-changes
