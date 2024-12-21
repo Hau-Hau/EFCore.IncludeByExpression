@@ -103,7 +103,7 @@ jobs:
           target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
       - uses: ./.github/actions/update-dotnet-version
         with:
-          project: ${{ steps.set-project-name.outputs.value }}.Test
+          project: ${{ steps.set-project-name.outputs.value }}.Tests
           target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
       - uses: ./.github/actions/commit-changes
         with:
@@ -119,7 +119,7 @@ jobs:
 
   status-tracker-lib:
     needs: [update-dotnet-lib]
-    if: !cancelled()
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       completed: ${{ steps.set-status.outputs.value }}
@@ -173,7 +173,7 @@ jobs:
 
   status-tracker-abstractions:
     needs: [update-dotnet-abstractions]
-    if: !cancelled()
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       completed: ${{ steps.set-status.outputs.value }}
@@ -187,11 +187,16 @@ jobs:
     needs: [init, should-updated-targetframeworks]
     if: needs.should-updated-targetframeworks.outputs.lib == 'true' || needs.should-updated-targetframeworks.outputs.abstractions == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
     outputs:
       branch: ${{ steps.set-branch-name.outputs.value }}
       status: ${{ steps.set-status.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WORKFLOW_TOKEN }}
       - name: Set branch name
         id: set-branch-name
         run: |
@@ -200,11 +205,11 @@ jobs:
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
           hard-reset: main
-      - name: Update setup-dotnet action
+      - name: Update setup-dotnet/action.yml action
         shell: pwsh
         run: |
-          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
           $filePath = "./.github/actions/setup-dotnet/action.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
           $versions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', '') + ".x" }
           $yamlContent = Get-Content $filePath -Raw
           $dotnetVersionPattern = "(?sm)dotnet-version:\s*\|.*?(?=\w+:|\z)"
@@ -212,6 +217,88 @@ jobs:
           $newDotnetVersionSection = "dotnet-version: |`r`n${indentation}" + ($versions | ForEach-Object { "${indentation}$_" } | Out-String).Trim()
           $updatedYamlContent = $yamlContent -replace $dotnetVersionPattern, $newDotnetVersionSection
           Set-Content $filePath -Value $updatedYamlContent
+      - name: Update release.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/actions/setup-dotnet/action.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $versions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', '') }
+          $yamlContent = Get-Content $filePath -Raw
+          $newOptionsString = "`n          - " + ($newOptions -join "`n          - ")
+          $pattern = '(?ms)(dotnet:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [0-9.]+)+(?=\s+\w+:|\s*$)'
+          $replacement = "`$1$newOptionsString"
+          $updatedContent = $yamlContent -replace $pattern, $replacement
+          $updatedContent | Set-Content -Path $filePath -NoNewline
+      - name: Update tests.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/workflows/tests.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $newOptions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') }
+          $yamlContent = Get-Content $filePath -Raw
+          $newBranchesString = "`n      - " + ($newOptions -join "`n      - ")
+          $pattern = '(?ms)(push:\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+          $replacement = "`$1$newBranchesString"
+          $updatedContent = $yamlContent -replace $pattern, $replacement
+          $updatedContent | Set-Content -Path $filePath -NoNewline
+      - name: Update coverage.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/workflows/tests.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $yamlContent = Get-Content $filePath -Raw
+          $updatedContent = $yamlContent -replace '(DOTNET_VERSION:\s*)8\.0\.x', '${1}9.0.x'
+          $updatedContent = $updatedContent -replace 'net8\.0', 'net9.0'
+          $updatedContent | Set-Content -Path $filePath -NoNewline
+      - name: Update update-nuspec.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/workflows/tests.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $newOptions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') }
+          $yamlContent = Get-Content $filePath -Raw
+          
+          $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
+          $newPRBranchesString = "`n      - " + ($newOptions -join "`n      - ")
+          
+          $optionsPattern = '(?ms)(branch:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+          $optionsReplacement = "`$1$newBranchesString"
+          $updatedContent = $yamlContent -replace $optionsPattern, $optionsReplacement
+          
+          $branchesPattern = '(?ms)(pull_request:\s+types:\s+- closed\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+          $branchesReplacement = "`$1$newPRBranchesString"
+          $updatedContent = $updatedContent -replace $branchesPattern, $branchesReplacement
+
+          $updatedContent | Set-Content -Path $filePath -NoNewline
+      - name: Regenerate dependabot.yml
+        shell: pwsh
+        run: |
+          $filePath = "./.github/dependabot.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $dotnetVersions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') }
+          $baseYaml = @(
+              "#------------------------------------------------------------------------------",
+              "# This code was generated by update-nuspec.yml pipeline.",
+              "# Changes to this file will be lost if the code is regenerated.",
+              "#------------------------------------------------------------------------------",
+              "version: 2",
+              "updates:",
+              "  - package-ecosystem: nuget",
+              "    directory: `"/`"",
+              "    schedule:",
+              "      interval: daily"
+          )
+          $baseYaml | Out-File -FilePath $filePath -Encoding utf8
+          foreach ($dotnetVersion in $dotnetVersions) {
+              $additionalEntry = @(
+                  "  - package-ecosystem: nuget",
+                  "    target-branch: release/$dotnetVersion",
+                  "    directory: `"/`"",
+                  "    schedule:",
+                  "      interval: daily"
+              )
+              $additionalEntry | Out-File -FilePath $filePath -Encoding utf8 -Append
+          }
       - uses: ./.github/actions/commit-changes
         with:
           message: Update pipelines
@@ -226,7 +313,7 @@ jobs:
 
   status-tracker-pipelines:
     needs: [update-pipelines]
-    if: !cancelled()
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       completed: ${{ steps.set-status.outputs.value }}
@@ -242,7 +329,7 @@ jobs:
       status-tracker-abstractions,
       status-tracker-pipelines,
     ]
-    if: !cancelled() && contains(needs.*.outputs.completed, 'true') 
+    if: always() && contains(needs.*.outputs.completed, 'true') 
     runs-on: ubuntu-latest
     outputs:
       result: ${{ steps.set-status.outputs.value }}
@@ -269,10 +356,15 @@ jobs:
         init,
         collect
     ]
-    if: !cancelled() && needs.collect.outputs.result == 'true'
+    if: always() && needs.collect.outputs.result == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
         - uses: actions/checkout@v4
+          with:
+            token: ${{ secrets.WORKFLOW_TOKEN }}
         - uses: ./.github/actions/setup-git
           with:
             branch: ${{ needs.init.outputs.branch }}
