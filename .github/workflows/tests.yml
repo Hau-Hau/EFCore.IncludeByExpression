@@ -1,28 +1,24 @@
-name: tests
-env:
-# dotnet-framework to dotnet-version maps
-  "net8.0": 8.0.x
-# dotnet-version to target framework map
-  "8.0.x": net8.0
+name: Test
 on:
+  workflow_dispatch:
+  pull_request:
+  # Do not edit. Section is edited by pipeline.
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - release/net8.0
+      - release/net7.0
+      - release/net6.0
 jobs:
-  build:
-    name: tests-${{ matrix.operating-system }}-dotnet-${{ matrix.dotnet-framework }}
-    runs-on: ${{ matrix.operating-system }}
-    strategy:
-      fail-fast: false
-      matrix:
-        operating-system: [ ubuntu-latest ]
-        dotnet-framework: [ net8.0 ]
+  test:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: ${{ env[matrix.dotnet-framework] }}
-    - name: Build project
-      run: dotnet build ./EFCore.IncludeByExpression.sln --configuration Release
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal --framework ${{ env[env[matrix.dotnet-framework]] }}
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+
+      - name: Build
+        run: dotnet build ./EFCore.IncludeByExpression.sln --configuration Debug
+
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal

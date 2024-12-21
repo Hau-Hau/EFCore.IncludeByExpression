@@ -41,18 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-git
-        with:
-          branch: main
-          hard-reset: main
-
       - name: get-branch-name
         id: get-branch-name
         shell: pwsh
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = [xml](Get-Content $csProjPath)
-          $projectTargetFramework = $csprojXml.Project.PropertyGroup.TargetFramework
+          $projectTargetFramework = "$($csprojXml.Project.PropertyGroup.TargetFramework)".Trim()
           "value=$($projectTargetFramework)" >> $env:GITHUB_OUTPUT
 
       - name: is-branch-exists
@@ -64,10 +59,9 @@ jobs:
 
       - uses: ./.github/actions/setup-git
         with:
-          branch: ${{ steps.get-branch-name.outputs.value }}
+          branch: release/${{ steps.get-branch-name.outputs.value }}
           hard-reset: main
 
       - uses: ./.github/actions/push-changes
         with:
-          branch: ${{ steps.get-branch-name.outputs.value }}
-          force: true
+          branch: release/${{ steps.get-branch-name.outputs.value }}

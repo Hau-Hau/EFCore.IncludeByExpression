@@ -10,6 +10,10 @@ runs:
     - name: Commit changes
       shell: bash
       run: |
+        is_dirty="$([[ ! -z "$(git status --porcelain)" ]] && echo true || echo false)"
+        if [[ "$is_dirty" == "false" ]]; then
+          exit 0
+        fi
+        
         git add --all .
         git commit -m "${{ inputs.message }}"
-

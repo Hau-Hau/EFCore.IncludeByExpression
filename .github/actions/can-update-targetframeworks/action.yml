@@ -47,8 +47,7 @@ runs:
           exit 0
         }
 
+        $currentVersion = [decimal]@($projectTargetFramework -replace "^net")[0]
         $numericVersions = $TargetDotnetVersions -replace "^net" | ForEach-Object { [decimal]$_ }
-        $checkNumeric = $projectTargetFramework -replace "^net" | ForEach-Object { [decimal]$_ }
-        
         $highestVersion = ($numericVersions | Measure-Object -Maximum).Maximum
-        "result=$("$($checkNumeric -ne $highestVersion)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+        "result=$("$($highestVersion -gt $currentVersion)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT

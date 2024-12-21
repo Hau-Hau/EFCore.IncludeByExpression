@@ -14,6 +14,11 @@ runs:
     - name: Push changes
       shell: bash
       run: |
+        # is_dirty="$([[ ! -z "$(git log --branches --not --remotes)" ]] && echo true || echo false)"
+        # if [[ "$is_dirty" == "true" ]]; then
+        #   exit 0
+        # fi
+        
         IS_BRANCH_EXISTS=$(git ls-remote --heads origin "${{ inputs.branch }}" | grep -q "refs/heads/${{ inputs.branch }}" && echo true || echo false)
         if [[ "$IS_BRANCH_EXISTS" == "true" ]]; then
           if [[ "${{ inputs.force }}" == "true" ]]; then
@@ -22,6 +27,5 @@ runs:
             git push origin "${{ inputs.branch }}"
           fi
         else
-          git push --set-upstream origin "${{ inputs.branch }}"
+          git push --set-upstream origin refs/heads/${{ inputs.branch }}
         fi
-
