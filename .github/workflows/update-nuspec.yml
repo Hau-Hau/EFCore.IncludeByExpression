@@ -1,6 +1,7 @@
 name: Update nuspec files
 
 on:
+  # Do not edit. Section is edited by pipeline.
   workflow_dispatch:
     inputs:
       force:
@@ -15,6 +16,7 @@ on:
           - release/net8.0
           - release/net7.0
           - release/net6.0
+  # Do not edit. Section is edited by pipeline.
   pull_request:
     types: 
       - closed
@@ -166,8 +168,6 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           project: ${{ steps.set-project-name.outputs.value }}
-          external-dependencies-sources: |
-            EncryptedConfigValue
           additional-files: |
             ./Readme.md
       - uses: ./.github/actions/commit-changes
