@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: daily
+  - package-ecosystem: nuget
+    directory: "/"
+    target-branch: release/net8.0
+    schedule:
+      interval: daily
+  - package-ecosystem: nuget
+    target-branch: release/net7.0
+    directory: "/"
+    schedule:
+      interval: daily
+  - package-ecosystem: nuget
+    target-branch: release/net6.0
+    directory: "/"
+    schedule:
+      interval: daily

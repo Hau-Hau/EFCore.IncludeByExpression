@@ -1,0 +1,30 @@
+name: Setup git
+description: Setup git
+inputs:
+  branch:
+    description: branch
+    required: true
+  hard-reset:
+    description: "Branch name to which hard reset"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: setup
+      shell: bash
+      run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          TARGET_BRANCH_NAME="${{ inputs.branch }}"
+          IS_TARGET_BRANCH_EXISTS=$(git ls-remote --heads origin $TARGET_BRANCH_NAME | grep -q "refs/heads/$TARGET_BRANCH_NAME" && echo true || echo false)
+          echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
+          if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
+            git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
+            git checkout -B $TARGET_BRANCH_NAME
+            if [[ "${{ inputs.hard-reset }}" != "" ]]; then
+              git reset --hard origin/${{ inputs.hard-reset }}
+            fi
+          else
+            git checkout -b $TARGET_BRANCH_NAME
+          fi
+

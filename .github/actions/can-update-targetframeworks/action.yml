@@ -1,0 +1,54 @@
+name: Can update TargetFrameworks
+description: Checks if TargetFrameworks can be updated
+inputs:
+  project:
+    required: true
+    description: "Allowed values: EFCore.IncludeByExpression | EFCore.IncludeByExpression.Abstractions"
+  target-dotnet-versions:
+    required: true
+    description: "Allowed values: string[]"
+outputs:
+  result:
+    description: "true | false"
+    value: "${{ steps.validate.outputs.result }}"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Validate
+      shell: pwsh
+      id: validate
+      run: |
+        $TargetDotnetVersions = "${{ inputs.target-dotnet-versions }}" -split ","
+        $SelectedProject = "${{ inputs.project }}"
+        $csProjPath = "$([IO.Path]::Combine(".", "$($SelectedProject)", "$($SelectedProject).csproj"))"
+        $csprojXml = [xml](Get-Content $csProjPath)
+
+        $projectTargetFrameworksStr = $csprojXml.Project.PropertyGroup.TargetFrameworks
+        if (![string]::IsNullOrWhitespace($projectTargetFrameworksStr)) {
+          $projectTargetFrameworks = @($projectTargetFrameworksStr -split ';' -match '\S')
+          $hasDifferences = [Bool](Compare-Object -ReferenceObject $projectTargetFrameworks -DifferenceObject $TargetDotnetVersions)
+          "result=$("$($hasDifferences)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          exit 0  
+        }
+
+        $projectTargetFramework = $csprojXml.Project.PropertyGroup.TargetFramework
+        if ([string]::IsNullOrWhitespace($projectTargetFramework)) {
+          Write-Host "No TargetFrameworks or TargetFramework found in $($path)"
+          exit 1
+        }
+
+        if ($projectTargetFramework -like 'netstandard*') {
+          "result=false" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        $numericVersions = $TargetDotnetVersions -replace "^net" | ForEach-Object { [decimal]$_ }
+        $checkNumeric = $projectTargetFramework -replace "^net" | ForEach-Object { [decimal]$_ }
+        
+        $highestVersion = ($numericVersions | Measure-Object -Maximum).Maximum
+        "result=$("$($checkNumeric -ne $highestVersion)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT

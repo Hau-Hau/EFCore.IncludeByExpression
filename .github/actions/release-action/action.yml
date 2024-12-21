@@ -1,0 +1,44 @@
+name: Release
+description: Releases selected project
+inputs:
+  GITHUB_TOKEN:
+    description: 'GITHUB_TOKEN'
+    required: true
+  NUGET_API_KEY:
+    description: 'NUGET_API_KEY'
+    required: true
+  solution:
+    required: true
+    description: "Path to sln file"
+  project:
+    required: true
+    description: "Allowed values: EFCore.IncludeByExpression | EFCore.IncludeByExpression.Abstractions"
+  dry-run:
+    description: "Dry run to do necessary check before actual release"
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - uses: ./.github/actions/setup-dotnet
+
+    - name: Build
+      shell: bash
+      run: dotnet build "${{ inputs.solution }}" --configuration Release
+
+    - name: Pack
+      shell: bash
+      run: dotnet pack ./${{ inputs.project }}/ --configuration Release
+
+    - name: Push NuGet package
+      shell: bash
+      run: |
+        version=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' ./${{ inputs.project }}/${{ inputs.project }}.nuspec)
+        artefact_path=$(find "./${{ inputs.project }}/bin/Release/" -maxdepth 1 -type f -name "*.$version.nupkg" | sort -V | tail -n 1 | xargs)
+
+        if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+          echo "dotnet nuget push \"$artefact_path\" --api-key ${{ inputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json"
+        else
+          dotnet nuget push "$artefact_path" --api-key ${{ inputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        fi
