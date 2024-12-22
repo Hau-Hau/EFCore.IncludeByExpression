@@ -14,9 +14,7 @@ on:
         required: true
         type: choice
         options:
-          - 8.0
-          - 7.0
-          - 6.0
+          - 
       dry-run:
         required: true
         type: boolean

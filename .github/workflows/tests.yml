@@ -4,11 +4,9 @@ on:
   pull_request:
   # Do not edit. Section is edited by pipeline.
   push:
-    branches: 
-      - main
+    branches:
+      - release/net9.0
       - release/net8.0
-      - release/net7.0
-      - release/net6.0
 jobs:
   test:
     runs-on: ubuntu-latest
