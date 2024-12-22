@@ -222,19 +222,20 @@ jobs:
         run: |
           $filePath = "./.github/workflows/release.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
-          $versions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', '') }
-          $yamlContent = Get-Content $filePath -Raw
-          $newOptionsString = "`n          - " + ($newOptions -join "`n          - ")
-          $pattern = '(?ms)(dotnet:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [0-9.]+)+(?=\s+\w+:|\s*$)'
-          $replacement = "`$1$newOptionsString"
-          $updatedContent = $yamlContent -replace $pattern, $replacement
-          $updatedContent | Set-Content -Path $filePath -NoNewline
+          $highestVersion = @($versionString -split ',') | ForEach-Object { $_.Replace("net", "") } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1
+          $highestNetVersion = "net$($highestVersion.ToString(2))"
+          $highestDotNetVersion = "$($highestVersion.ToString(2)).x"
+          $content = Get-Content -Path $filePath -Raw
+          $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $highestDotNetVersion"
+          $content = $content -replace '--framework net\d+\.\d+', "--framework $highestNetVersion"
+          $content = $content -replace 'coverage\.net\d+\.\d+\.info', "coverage.$highestNetVersion.info"
+          $content | Set-Content -Path $filePath -NoNewline
       - name: Update tests.yml workflow
         shell: pwsh
         run: |
           $filePath = "./.github/workflows/tests.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
-          $newOptions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') }
+          $newOptions = @("main") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') })
           $yamlContent = Get-Content $filePath -Raw
           $newBranchesString = "`n      - " + ($newOptions -join "`n      - ")
           $pattern = '(?ms)(push:\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
@@ -246,6 +247,7 @@ jobs:
         run: |
           $filePath = "./.github/workflows/coverage.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $versions = @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', '') })
           $yamlContent = Get-Content $filePath -Raw
           $updatedContent = $yamlContent -replace '(DOTNET_VERSION:\s*)8\.0\.x', '${1}9.0.x'
           $updatedContent = $updatedContent -replace 'net8\.0', 'net9.0'
@@ -255,7 +257,7 @@ jobs:
         run: |
           $filePath = "./.github/workflows/update-nuspec.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
-          $newOptions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') }
+          $newOptions = @("main") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') })
           $yamlContent = Get-Content $filePath -Raw
           
           $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
