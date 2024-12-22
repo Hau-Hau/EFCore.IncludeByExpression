@@ -190,7 +190,6 @@ jobs:
     permissions:
       actions: write
       contents: write
-      workflow: write
     outputs:
       branch: ${{ steps.set-branch-name.outputs.value }}
       status: ${{ steps.set-status.outputs.value }}
@@ -305,6 +304,7 @@ jobs:
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
           force: true
+          token: ${{ secrets.GH_PAT }}
       - name: Set status
         id: set-status
         run: |
