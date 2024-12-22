@@ -220,7 +220,7 @@ jobs:
       - name: Update release.yml workflow
         shell: pwsh
         run: |
-          $filePath = "./.github/actions/setup-dotnet/action.yml"
+          $filePath = "./.github/workflows/release.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
           $versions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', '') }
           $yamlContent = Get-Content $filePath -Raw
@@ -244,7 +244,7 @@ jobs:
       - name: Update coverage.yml workflow
         shell: pwsh
         run: |
-          $filePath = "./.github/workflows/tests.yml"
+          $filePath = "./.github/workflows/coverage.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
           $yamlContent = Get-Content $filePath -Raw
           $updatedContent = $yamlContent -replace '(DOTNET_VERSION:\s*)8\.0\.x', '${1}9.0.x'
@@ -253,7 +253,7 @@ jobs:
       - name: Update update-nuspec.yml workflow
         shell: pwsh
         run: |
-          $filePath = "./.github/workflows/tests.yml"
+          $filePath = "./.github/workflows/update-nuspec.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
           $newOptions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/net') }
           $yamlContent = Get-Content $filePath -Raw
