@@ -190,6 +190,7 @@ jobs:
     permissions:
       actions: write
       contents: write
+      workflow: write
     outputs:
       branch: ${{ steps.set-branch-name.outputs.value }}
       status: ${{ steps.set-status.outputs.value }}
