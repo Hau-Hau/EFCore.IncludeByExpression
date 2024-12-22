@@ -301,10 +301,11 @@ jobs:
         with:
           message: Update pipelines
       - uses: ./.github/actions/push-changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
           force: true
-          token: ${{ secrets.GH_PAT }}
       - name: Set status
         id: set-status
         run: |

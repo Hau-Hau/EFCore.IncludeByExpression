@@ -7,9 +7,6 @@ inputs:
   hard-reset:
     description: "Branch name to which hard reset"
     required: false
-  token:
-   description: "GH token"
-   required: false
 runs:
   using: "composite"
   steps:
@@ -18,10 +15,6 @@ runs:
       run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          if [[ "${{ inputs.token }}" != "" ]]; then
-            echo "https://x-access-token:${{ inputs.token }}@github.com" > ~/.git-credentials
-          fi
-          
           TARGET_BRANCH_NAME="${{ inputs.branch }}"
           IS_TARGET_BRANCH_EXISTS=$(git ls-remote --heads origin $TARGET_BRANCH_NAME | grep -q "refs/heads/$TARGET_BRANCH_NAME" && echo true || echo false)
           echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
