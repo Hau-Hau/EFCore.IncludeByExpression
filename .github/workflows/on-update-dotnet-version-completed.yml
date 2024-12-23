@@ -28,7 +28,7 @@ jobs:
 
           merged="$([[ "$PULL_REQUEST_MERGED" == "true" ]] && echo true || echo false)"
           originated_from_feature="$([[ ! "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/update-dotnet-version$ ]] && echo true || echo false)"
-          result="$([[ "$merged" == true && "$originated_from_feature" == true ]] && echo true || echo false)"
+          result="$([[ "$merged" == true && "$originated_from_feature" == false ]] && echo true || echo false)"
           echo "result=$result" >> $GITHUB_OUTPUT
 
   try-create-new-branch:
