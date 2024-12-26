@@ -1,0 +1,38 @@
+name: Update dotnet version
+description: Update dotnet version in selected project
+inputs:
+  project:
+    required: true
+    description: "Allowed values: EFCore.IncludeByExpression | EFCore.IncludeByExpression.Abstractions | EFCore.IncludeByExpression.Tests"
+  target-dotnet-versions:
+    required: true
+    description: "Allowed values: string[]"
+
+runs:
+  using: "composite"
+  steps:
+      - name: Update csproj files
+        shell: pwsh
+        run: |
+          $TargetDotnetVersions = "${{ inputs.target-dotnet-versions }}" -split ","
+          $SelectedProject = "${{ inputs.project }}"
+          $csprojPath = "$([IO.Path]::Combine(".", "$($SelectedProject)", "$($SelectedProject).csproj"))"
+          $csprojContent = Get-Content $csprojPath
+          $csprojContent | ForEach-Object {
+              if ($_ -match '<TargetFramework>(net[0-9]+\.[0-9]+)</TargetFramework>') {
+                  $newVersion = $TargetDotnetVersions | Sort-Object { [version]($_ -replace "net", "") } -Descending | Select-Object -First 1
+                  $currentFramework = $matches[1]
+                  if ($currentFramework -match '^net[0-9]+\.[0-9]+$') {
+                      $updatedContent = $csprojContent -replace "<TargetFramework>$currentFramework</TargetFramework>", "<TargetFramework>$newVersion</TargetFramework>"
+                      Set-Content -Path $csprojPath -Value $updatedContent
+                  } else {
+                      Write-Host "No update needed for $currentFramework"
+                  }
+              }
+              elseif ($_ -match '<TargetFrameworks>(net[0-9]+\.[0-9]+(;net[0-9]+\.[0-9]+)*)</TargetFrameworks>') {
+                  $currentFrameworks = $matches[1]
+                  $updatedContent = $csprojContent -replace "<TargetFrameworks>$currentFrameworks</TargetFrameworks>", "<TargetFrameworks>$($TargetDotnetVersions -join ";")</TargetFrameworks>"
+                  Set-Content -Path $csprojPath -Value $updatedContent
+              }
+          }
+          exit 0
