@@ -1,5 +1,5 @@
-name: Release
-description: Releases selected project
+name: Deploy
+description: Deploy selected project
 inputs:
   GITHUB_TOKEN:
     description: 'GITHUB_TOKEN'
@@ -7,12 +7,12 @@ inputs:
   NUGET_API_KEY:
     description: 'NUGET_API_KEY'
     required: true
+  solution:
+    required: true
+    description: "Path to sln file"
   project:
     required: true
-    description: "Allowed values: EncryptedConfigValue.Module | EncryptedConfigValue.AspNetCore | EncryptedConfigValue.Cli"
-  dotnet-version:
-    required: true
-    description: "Indicates release branch from which changes will be deployed"
+    description: "Allowed values: EFCore.IncludeByExpression | EFCore.IncludeByExpression.Abstractions"
   dry-run:
     description: "Dry run to do necessary check before actual release"
     default: "false"
@@ -21,18 +21,11 @@ runs:
   steps:
     - uses: actions/checkout@v4
 
-    - uses: ./.github/actions/setup-dotnet-action
-
-    - name: Setup git
-      shell: bash
-      run: |
-        git config --global user.name "GitHub Action"
-        git config --global user.email "action@github.com"
-        git checkout -b "release/net${{ inputs.dotnet-version }}"
+    - uses: ./.github/actions/setup-dotnet
 
     - name: Build
       shell: bash
-      run: dotnet build ./EncryptedConfigValue.sln --configuration Release
+      run: dotnet build "${{ inputs.solution }}" --configuration Release
 
     - name: Pack
       shell: bash

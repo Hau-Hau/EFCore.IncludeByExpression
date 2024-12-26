@@ -3,7 +3,7 @@ description: Checks if project has any changes since last release
 inputs:
   project:
     required: true
-    description: "Allowed values: EncryptedConfigValue.Module | EncryptedConfigValue.AspNetCore | EncryptedConfigValue.Cli"
+    description: "Allowed values: EFCore.IncludeByExpression | EFCore.IncludeByExpression.Abstractions"
 outputs:
   result:
     description: "true | false"
@@ -94,8 +94,8 @@ runs:
         # Fetch hash of last release based on the project input
         $lastReleaseHash = git tag -l "$($SelectedProject)/*" | Sort-Object -V | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
         if (-not $lastReleaseHash) {
-          Write-Host "Cannot fetch hash of last release"
-          exit 1
+          "result=true" >> $env:GITHUB_OUTPUT
+          exit 0
         }
 
         $csProjPath = "$([IO.Path]::Combine(".", "$($SelectedProject)", "$($SelectedProject).csproj"))"

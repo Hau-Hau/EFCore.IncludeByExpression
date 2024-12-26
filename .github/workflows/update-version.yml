@@ -1,0 +1,183 @@
+name: Update versions
+
+on:
+  # Do not edit. Section is edited by pipeline.
+  workflow_dispatch:
+    inputs:
+      force:
+        required: true
+        type: boolean
+        default: false
+      branch:
+        required: true
+        type: choice
+        options:
+          - main
+          - release/EFCore.IncludeByExpression/net8.0
+  # Do not edit. Section is edited by pipeline.
+  pull_request:
+    types: 
+      - closed
+    branches:
+      - main
+      - release/EFCore.IncludeByExpression/net9.0
+      - release/EFCore.IncludeByExpression/net8.0
+
+concurrency:
+  group: update-nuspec
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PULL_REQUEST_MERGED: ${{ github.event.pull_request.merged }}
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate
+        id: validate
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          is_recurring_call="$([[ "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/update-version$ ]] && echo true || echo false)"
+          if [[ "$is_recurring_call" == "true" ]]; then
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          is_merged="$([[ "$PULL_REQUEST_MERGED" == "true" ]] && echo true || echo false)"
+          if [[ "$is_merged" == "false" ]]; then
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          is_targeting_trunk="$([[ "$GITHUB_BASE_REF" == "main" ]] && echo true || echo false)"
+          is_targeting_release="$([[ "$GITHUB_BASE_REF" =~ ^release\/[^\/]+$ ]] && echo true || echo false)"
+          if [[ "$is_targeting_trunk" == "false" || "$is_targeting_release" == "false" ]]; then
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+  has-changes:
+    needs: [validate]
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      lib: ${{ steps.finalize.outputs.lib }}
+      abstractions: ${{ steps.finalize.outputs.abstractions }}
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/has-changes
+        id: has-changes-lib
+        with:
+          project: EFCore.IncludeByExpression
+
+      - uses: ./.github/actions/has-changes
+        id: has-changes-abstractions
+        with:
+          project: EFCore.IncludeByExpression.Abstractions
+
+      - name: Finalize
+        id: finalize
+        run: |
+          echo "lib=${{ steps.has-changes-lib.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "abstractions=${{ steps.has-changes-abstractions.outputs.result }}" >> $GITHUB_OUTPUT
+
+  lib:
+    needs: [has-changes]
+    if: inputs.force == true || needs.has-changes.outputs.lib == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      project: ${{ steps.set-project-name.outputs.value }}
+      branch: ${{ steps.set-branch-name.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set project name
+        id: set-project-name
+        run: |
+          echo "value=EFCore.IncludeByExpression" >> $GITHUB_OUTPUT
+      - name: Set branch name
+        id: set-branch-name
+        run: |
+          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ github.base_ref || inputs.branch }}
+          hard-reset: main
+      - uses: ./.github/actions/update-nuspec-file
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          project: ${{ steps.set-project-name.outputs.value }}
+          additional-files: |
+            ./Readme.md
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update ${{ steps.set-project-name.outputs.value }}.nuspec
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          force: true
+      - uses: ./.github/actions/put-pull-request
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: Update ${{ steps.set-project-name.outputs.value }}.nuspec
+          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          from: ${{ steps.set-branch-name.outputs.value }}
+          into: ${{ github.base_ref || inputs.branch }}
+
+  abstractions:
+    needs: [has-changes]
+    if: inputs.force == true || needs.has-changes.outputs.abstractions == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      project: ${{ steps.set-project-name.outputs.value }}
+      branch: ${{ steps.set-branch-name.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set project name
+        id: set-project-name
+        run: |
+          echo "value=EFCore.IncludeByExpression.Abstractions" >> $GITHUB_OUTPUT
+      - name: Set branch name
+        id: set-branch-name
+        run: |
+          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-nuspec" >> $GITHUB_OUTPUT
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ github.base_ref || inputs.branch }}
+      - uses: ./.github/actions/update-nuspec-file
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          project: ${{ steps.set-project-name.outputs.value }}
+          additional-files: |
+            ./Readme.md
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update ${{ steps.set-project-name.outputs.value }}.nuspec
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          force: true
+      - uses: ./.github/actions/put-pull-request
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: Update ${{ steps.set-project-name.outputs.value }}.nuspec
+          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          from: ${{ steps.set-branch-name.outputs.value }}
+          into: ${{ github.base_ref || inputs.branch }}
