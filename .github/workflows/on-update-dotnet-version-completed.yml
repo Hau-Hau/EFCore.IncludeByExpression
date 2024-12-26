@@ -1,0 +1,90 @@
+name: On update-dotnet-version completed
+
+on:
+  workflow_dispatch:
+  pull_request:
+      types: 
+        - closed
+      branches:
+        - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PULL_REQUEST_MERGED: ${{ github.event.pull_request.merged }}
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate
+        id: validate
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          is_listener="$([[ "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/update-dotnet-version$ ]] && echo true || echo false)"
+          if [[ "$is_listener" == "false" ]]; then
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          is_merged="$([[ "$PULL_REQUEST_MERGED" == "true" ]] && echo true || echo false)"
+          if [[ "$is_merged" == "false" ]]; then
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "result=true" >> $GITHUB_OUTPUT
+
+  lib:
+    needs: [validate]
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      get-branch-name: ${{ steps.get-branch-name.outputs.value }}
+      is-branch-exists: ${{ steps.is-branch-exists.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: get-branch-name
+        id: get-branch-name
+        shell: pwsh
+        run: |
+          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
+          $csprojXml = [xml](Get-Content $csProjPath)
+          $projectTargetFramework = "$($csprojXml.Project.PropertyGroup.TargetFramework)".Trim()
+          $branchName = "release/EFCore.IncludeByExpression/$($projectTargetFramework)"
+          "value=$($branchName)" >> $env:GITHUB_OUTPUT
+
+      - name: is-branch-exists
+        id: is-branch-exists
+        run: |
+          branch_name="${{ steps.get-branch-name.outputs.value }}"
+          is_branch_exists=$(git ls-remote --heads origin $branch_name | grep -q "refs/heads/$branch_name" && echo true || echo false)
+          echo "value=$is_branch_exists" >> $GITHUB_OUTPUT
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ steps.get-branch-name.outputs.value }}
+          hard-reset: main
+
+      - name: Set new version number
+        run: |
+          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
+          $csprojXml = [xml](Get-Content $csProjPath)
+          $newVersion = ("$($csprojXml.Project.PropertyGroup.TargetFramework)".Trim() -replace 'net', '') + ".0"
+          $content = Get-Content -Path $csProjPath -Raw
+          $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
+          Set-Content -Path $csProjPath -Value $updatedContent
+
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Set version of EFCore.IncludeByExpression
+
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ steps.get-branch-name.outputs.value }}
