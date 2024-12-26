@@ -1,0 +1,16 @@
+name: Test
+on:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet-action
+
+      - name: Build
+        run: dotnet build ./EFCore.IncludeByExpression --configuration Debug
+
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal

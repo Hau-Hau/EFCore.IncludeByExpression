@@ -1,0 +1,104 @@
+name: Has Changes
+description: Checks if project has any changes since last release
+inputs:
+  project:
+    required: true
+    description: "Allowed values: EFCore.IncludeByExpression | EFCore.IncludeByExpression.Abstractions"
+outputs:
+  result:
+    description: "true | false"
+    value: "${{ steps.validate.outputs.result }}"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Validate
+      shell: pwsh
+      id: validate
+      run: |
+        function Resolve-RelativePath {
+          param (
+              [string]$Path
+          )
+
+          $pathParts = $Path -split '[\\/]+'
+          $resolvedStack = New-Object System.Collections.Stack
+          foreach ($part in $pathParts) {
+              if ($part -eq "..") {
+                  if ($resolvedStack.Count -gt 0 -and $resolvedStack.Peek() -ne "..") {
+                      [void]$resolvedStack.Pop()
+                  }
+                  else {
+                      $resolvedStack.Push($part)
+                  }
+              }
+              elseif ($part -eq ".") {
+                  if ($resolvedStack.Count -eq 0) {
+                      $resolvedStack.Push($part)
+                  }
+              }
+              elseif ($part -ne "") {
+                  $resolvedStack.Push($part)
+              }
+          }
+
+          $resolvedPath = [System.Collections.ArrayList]::new($resolvedStack).ToArray()
+          [Array]::Reverse($resolvedPath)
+          $resolvedPath = $resolvedPath -join [IO.Path]::DirectorySeparatorChar
+          return $resolvedPath
+        }
+
+        function HasChanges {
+          param ($CsprojPath, $CurrentHash, $PrevHash)  
+
+          $projectDirectoryPath = "$(Split-Path -Path $CsprojPath)"
+          $output = $(git diff --quiet "$($CurrentHash):$($projectDirectoryPath -replace '\\', '/')" "$($PrevHash):$($projectDirectoryPath -replace '\\', '/')" -- ':!*.nuspec'; $LASTEXITCODE -ne 0)
+
+          if ($output) {
+            return $output;
+          }
+
+          $csproj = [xml](Get-Content "$($CsprojPath)")
+          $projectReferences = $csproj.Project.ItemGroup.ProjectReference | Where-Object { $_ -ne $null }
+          foreach ($projectReference in $projectReferences) {
+            if ($projectReference.PrivateAssets -ne "All") {
+              continue;
+            }
+            
+            if ([string]::IsNullOrWhitespace($projectReference.IncludeAssets)) {
+              continue;
+            }
+
+
+            $output = HasChanges -CsprojPath "$(Resolve-RelativePath $([IO.Path]::Combine($projectDirectoryPath, $projectReference.Include)))" -CurrentHash $CurrentHash -PrevHash $PrevHash
+            if ($output) {
+              break;
+            }
+          }
+
+          return $output
+        }
+
+        $SelectedProject = "${{ inputs.project }}"
+
+        $currentHash = git rev-parse origin/main
+        if (-not $currentHash) {
+          Write-Host "Cannot fetch hash of origin/main"
+          exit 1
+        }
+
+        # Fetch hash of last release based on the project input
+        $lastReleaseHash = git tag -l "$($SelectedProject)/*" | Sort-Object -V | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
+        if (-not $lastReleaseHash) {
+          "result=true" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        $csProjPath = "$([IO.Path]::Combine(".", "$($SelectedProject)", "$($SelectedProject).csproj"))"
+        $hasDifferences = HasChanges -CsprojPath $csProjPath  -CurrentHash $currentHash -PrevHash $lastReleaseHash
+        "result=$("$($hasDifferences)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+        exit 0
