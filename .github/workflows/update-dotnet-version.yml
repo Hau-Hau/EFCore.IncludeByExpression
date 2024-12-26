@@ -166,18 +166,18 @@ jobs:
           $replacement = "`$1$newOptionsString"
           $updatedContent = $yamlContent -replace $pattern, $replacement
           $updatedContent | Set-Content -Path $filePath -NoNewline
-      - name: Update tests.yml workflow
-        shell: pwsh
-        run: |
-          $filePath = "./.github/workflows/tests.yml"
-          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
-          $newOptions = @("main") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') }) + @("release/EFCore.IncludeByExpression.Abstractions")
-          $yamlContent = Get-Content $filePath -Raw
-          $newBranchesString = "`n      - " + ($newOptions -join "`n      - ")
-          $pattern = '(?ms)(push:\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
-          $replacement = "`$1$newBranchesString"
-          $updatedContent = $yamlContent -replace $pattern, $replacement
-          $updatedContent | Set-Content -Path $filePath -NoNewline
+      # - name: Update tests.yml workflow
+      #   shell: pwsh
+      #   run: |
+      #     $filePath = "./.github/workflows/tests.yml"
+      #     $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+      #     $newOptions = @("main") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') }) + @("release/EFCore.IncludeByExpression.Abstractions")
+      #     $yamlContent = Get-Content $filePath -Raw
+      #     $newBranchesString = "`n      - " + ($newOptions -join "`n      - ")
+      #     $pattern = '(?ms)(push:\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+      #     $replacement = "`$1$newBranchesString"
+      #     $updatedContent = $yamlContent -replace $pattern, $replacement
+      #     $updatedContent | Set-Content -Path $filePath -NoNewline
       - name: Update coverage.yml workflow
         shell: pwsh
         run: |
