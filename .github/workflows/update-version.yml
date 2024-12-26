@@ -12,14 +12,15 @@ on:
         required: true
         type: choice
         options:
-          - main
+          - release/EFCore.IncludeByExpression.Abstractions
+          - release/EFCore.IncludeByExpression/net9.0
           - release/EFCore.IncludeByExpression/net8.0
   # Do not edit. Section is edited by pipeline.
   pull_request:
     types: 
       - closed
     branches:
-      - main
+      - release/EFCore.IncludeByExpression.Abstractions
       - release/EFCore.IncludeByExpression/net9.0
       - release/EFCore.IncludeByExpression/net8.0
 
