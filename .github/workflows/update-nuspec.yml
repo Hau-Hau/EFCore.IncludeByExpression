@@ -1,0 +1,262 @@
+name: Update nuspec files
+
+on:
+  workflow_dispatch:
+    inputs:
+      dotnet-version:
+        required: true
+        type: choice
+        options:
+          - 8.0
+          - 7.0
+          - 6.0
+      force:
+        required: true
+        type: boolean
+        default: false
+  pull_request:
+    types: 
+      - closed
+    branches:
+      - release/net8.0
+      - release/net7.0
+      - release/net6.0
+
+concurrency:
+  group: update-nuspec/${{ github.base_ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PULL_REQUEST_MERGED: ${{ github.event.pull_request.merged }}
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate
+        id: validate
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          merged="$([[ "$PULL_REQUEST_MERGED" == "true" ]] && echo true || echo false)"
+          originated_from_feature="$([[ ! "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/net[^\/]+\/update-nuspec$ ]] && echo true || echo false)"
+          result="$([[ "$merged" == true && "$originated_from_feature" == true ]] && echo true || echo false)"
+          echo "result=$result" >> $GITHUB_OUTPUT
+
+  setup:
+    needs: validate
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    outputs: 
+      dotnet-version: ${{ steps.setup-variables.outputs.dotnet-version }}
+    steps:
+      - name: Setup variables
+        id: setup-variables
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              echo "dotnet-version=${{ inputs.dotnet-version }}" >> $GITHUB_OUTPUT
+              exit 0
+          fi
+            
+          base_ref=$(echo "${{ github.base_ref }}" | sed 's/release\/net//g')
+          echo "dotnet-version=$base_ref" >> $GITHUB_OUTPUT
+
+  has-changes:
+    needs: [setup, validate]
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      module: ${{ steps.finalize.outputs.module }}
+      aspnetcore: ${{ steps.finalize.outputs.aspnetcore }}
+      cli: ${{ steps.finalize.outputs.cli }}
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/has-changes-action
+        id: has-changes-module
+        with:
+          project: EncryptedConfigValue.Module
+
+      - uses: ./.github/actions/has-changes-action
+        id: has-changes-aspnetcore
+        with:
+          project: EncryptedConfigValue.AspNetCore
+
+      - uses: ./.github/actions/has-changes-action
+        id: has-changes-cli
+        with:
+          project: EncryptedConfigValue.Cli
+
+      - name: Finalize
+        id: finalize
+        run: |
+          echo "module=${{ steps.has-changes-module.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "aspnetcore=${{ steps.has-changes-aspnetcore.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "cli=${{ steps.has-changes-cli.outputs.result }}" >> $GITHUB_OUTPUT
+
+  module:
+    needs: [setup, has-changes]
+    if: inputs.force == true || needs.has-changes.outputs.module == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup env variables
+        shell: bash
+        run: |
+          TARGET_BRANCH_NAME="bot/EncryptedConfigValue.Module/net${{ needs.setup.outputs.dotnet-version }}/update-nuspec"
+          echo "TARGET_BRANCH_NAME=$TARGET_BRANCH_NAME" >> $GITHUB_ENV
+      
+      - name: Setup git
+        shell: bash
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          IS_TARGET_BRANCH_EXISTS=$(git ls-remote --heads origin $TARGET_BRANCH_NAME | grep -q "refs/heads/$TARGET_BRANCH_NAME" && echo true || echo false)
+          echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
+          if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
+            git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
+            git checkout $TARGET_BRANCH_NAME
+            git reset --hard origin/main
+          else
+            git checkout -b $TARGET_BRANCH_NAME
+          fi
+
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update EncryptedConfigValue.Module.nuspec
+
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ env.TARGET_BRANCH_NAME }}
+          force: true
+
+      - uses: ./.github/actions/put-pull-request
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: Update EncryptedConfigValue.Module.nuspec
+          body: This PR updates the EncryptedConfigValue.Module.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          from: ${{ env.TARGET_BRANCH_NAME }}
+          into: main
+
+  aspnetcore:
+    needs: [setup, has-changes]
+    if: inputs.force == true || needs.has-changes.outputs.aspnetcore == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup env variables
+        shell: bash
+        run: |
+          TARGET_BRANCH_NAME="bot/EncryptedConfigValue.AspNetCore/net${{ needs.setup.outputs.dotnet-version }}/update-nuspec"
+          echo "TARGET_BRANCH_NAME=$TARGET_BRANCH_NAME" >> $GITHUB_ENV
+      
+      - name: Setup git
+        shell: bash
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          IS_TARGET_BRANCH_EXISTS=$(git ls-remote --heads origin $TARGET_BRANCH_NAME | grep -q "refs/heads/$TARGET_BRANCH_NAME" && echo true || echo false)
+          echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
+          if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
+            git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
+            git checkout $TARGET_BRANCH_NAME
+            git reset --hard origin/main
+          else
+            git checkout -b $TARGET_BRANCH_NAME
+          fi
+
+      - uses: ./.github/actions/update-nuspec-file-action
+        with:
+          project: EncryptedConfigValue.AspNetCore
+          dotnet-version: ${{ needs.setup.outputs.dotnet-version }}
+          external-dependencies-sources: |
+            EncryptedConfigValue
+          additional-files: |
+            ./Readme.md
+
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update EncryptedConfigValue.AspNetCore.nuspec
+
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ env.TARGET_BRANCH_NAME }}
+          force: true
+
+      - uses: ./.github/actions/put-pull-request
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: Update EncryptedConfigValue.AspNetCore.nuspec
+          body: This PR updates the EncryptedConfigValue.AspNetCore.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          from: ${{ env.TARGET_BRANCH_NAME }}
+          into: main
+
+  cli:
+    needs: [setup, has-changes]
+    if: inputs.force == true || needs.has-changes.outputs.cli == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup env variables
+        shell: bash
+        run: |
+          TARGET_BRANCH_NAME="bot/EncryptedConfigValue.Cli/net${{ needs.setup.outputs.dotnet-version }}/update-nuspec"
+          echo "TARGET_BRANCH_NAME=$TARGET_BRANCH_NAME" >> $GITHUB_ENV
+      
+      - name: Setup git
+        shell: bash
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          IS_TARGET_BRANCH_EXISTS=$(git ls-remote --heads origin $TARGET_BRANCH_NAME | grep -q "refs/heads/$TARGET_BRANCH_NAME" && echo true || echo false)
+          echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
+          if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
+            git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
+            git checkout $TARGET_BRANCH_NAME
+            git reset --hard origin/main
+          else
+            git checkout -b $TARGET_BRANCH_NAME
+          fi
+
+      - uses: ./.github/actions/update-nuspec-file-action
+        with:
+          project: EncryptedConfigValue.Cli
+          dotnet-version: ${{ needs.setup.outputs.dotnet-version }}
+          external-dependencies-sources: |
+            EncryptedConfigValue
+          additional-files: |
+            ./Readme.md
+
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update EncryptedConfigValue.Cli.nuspec
+
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ env.TARGET_BRANCH_NAME }}
+          force: true
+
+      - uses: ./.github/actions/put-pull-request
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: Update EncryptedConfigValue.Cli.nuspec
+          body: This PR updates the EncryptedConfigValue.Cli.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          from: ${{ env.TARGET_BRANCH_NAME }}
+          into: main

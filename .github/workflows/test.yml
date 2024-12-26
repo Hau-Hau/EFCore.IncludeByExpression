@@ -1,0 +1,22 @@
+name: Test
+on:
+  pull_request:
+  push:
+    branches: 
+      - main
+      - release/net8.0
+      - release/net7.0
+      - release/net6.0
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet-action
+
+      - name: Build
+        run: dotnet build ./EncryptedConfigValue.sln --configuration Debug
+
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal

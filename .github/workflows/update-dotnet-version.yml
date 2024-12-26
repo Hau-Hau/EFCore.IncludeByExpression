@@ -1,0 +1,165 @@
+name: Update dotnet version
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * MON'
+
+concurrency:
+  group: update-nuspec
+  cancel-in-progress: true
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      dotnet-version: ${{ steps.dotnet-version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest .NET version
+        id: dotnet-version
+        shell: pwsh
+        run: |
+          $version = ((Invoke-WebRequest -Uri "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json" -UseBasicParsing | ConvertFrom-Json)."releases-index" | Where-Object { $_."product" -eq ".NET" -and $_."support-phase" -eq "active" | Sort-Object -Property channel-version -Descending } | Select-Object -First 1 | Select -Property channel-version)."channel-version"
+          if ([string]::IsNullOrWhitespace($version)) {
+            exit 1
+          }
+
+          echo "value=$($version)" >> $GITHUB_OUTPUT
+          exit 0
+
+  validate:
+    needs: [init]
+    if: needs.init.outputs.dotnet-version != ''
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate
+        id: validate
+        shell: pwsh
+        run: |
+          $newestDotNetVersion = "${{ needs.init.outputs.dotnet-version }}"
+          $repoNewestDotNetVersion = (git branch --list 'release/*' | ForEach-Object { if ($_ -match "release/net(\d+\.\d+)") { [version]$matches[1] } } | Sort-Object -Descending | Select-Object -First 1).ToString()
+          if ([string]::IsNullOrWhitespace($repoNewestDotNetVersion)) {
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          $result = ([int]$newestDotNetVersion -gt [int]$repoNewestDotNetVersion)
+          echo "result=$("$($hasDifferences)".ToLowerInvariant())" >> $GITHUB_OUTPUT
+          exit 0
+
+  update-files:
+    needs: [init, validate]
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+        contents: write
+        pull-requests: write
+    steps:
+      - name: Setup env variables
+        shell: bash
+        run: |
+          TARGET_BRANCH_NAME="release/net${{ needs.init.outputs.dotnet-version }}"
+          echo "TARGET_BRANCH_NAME=$TARGET_BRANCH_NAME" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+
+      - name: Setup dotnet-outdated
+        run: dotnet tool install --global dotnet-outdated-tool
+
+      - name: Setup git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          IS_TARGET_BRANCH_EXISTS=$(git ls-remote --heads origin $TARGET_BRANCH_NAME | grep -q "refs/heads/$TARGET_BRANCH_NAME" && echo true || echo false)
+          echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
+          if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
+            git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
+            git checkout $TARGET_BRANCH_NAME
+            git reset --hard origin/main
+          else
+            git checkout -b $TARGET_BRANCH_NAME
+          fi
+
+      - name: Update csproj files
+        shell: pwsh
+        run: |
+          $newVersion = "net${{ needs.init.outputs.dotnet-version }}"
+          Get-ChildItem -Path "." -Recurse -Filter "*.csproj" | ForEach-Object {
+              $csprojPath = $_.FullName
+              $csprojContent = Get-Content $csprojPath
+              $csprojContent | ForEach-Object {
+                  if ($_ -match '<TargetFramework>(net[0-9]+\.[0-9]+)</TargetFramework>') {
+                      $currentFramework = $matches[1]
+                      if ($currentFramework -match '^net[0-9]+\.[0-9]+$') {
+                          $updatedContent = $csprojContent -replace "<TargetFramework>$currentFramework</TargetFramework>", "<TargetFramework>$newVersion</TargetFramework>"
+                          Set-Content -Path $csprojPath -Value $updatedContent
+                      } else {
+                          Write-Host "No update needed for $currentFramework"
+                      }
+                  }
+              }
+          }
+          exit 0
+
+      - name: Update dependencies files
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "." -Recurse -Filter "*.csproj" | ForEach-Object {
+            dotnet-outdated "$($_.FullName)" --upgrade
+          }
+          exit 0
+
+      - uses: ./.github/actions/update-nuspec-file
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          dotnet-version: ${{ needs.init.outputs.dotnet-version }}
+          project: EncryptedConfigValue.Module
+          additional-files: |
+            ./Readme.md
+
+      - uses: ./.github/actions/update-nuspec-file
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          project: EncryptedConfigValue.AspNetCore
+          dotnet-version: ${{ needs.init.outputs.dotnet-version }}
+          external-dependencies-sources: |
+            EncryptedConfigValue
+          additional-files: |
+            ./Readme.md
+
+      - uses: ./.github/actions/update-nuspec-file
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          project: EncryptedConfigValue.Cli
+          dotnet-version: ${{ needs.init.outputs.dotnet-version }}
+          external-dependencies-sources: |
+            EncryptedConfigValue
+          additional-files: |
+            ./Readme.md
+
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update project to net${{ needs.init.outputs.dotnet-version }}
+
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ env.TARGET_BRANCH_NAME }}
+          force: true
+
+      - uses: ./.github/actions/put-pull-request
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: Update to net${{ needs.init.outputs.dotnet-version }}
+          body: This PR updates project and pipelines to net${{ needs.init.outputs.dotnet-version }}.
+          from: ${{ env.TARGET_BRANCH_NAME }}
+          into: main
+
+

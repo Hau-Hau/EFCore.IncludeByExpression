@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        required: true
+        type: choice
+        options:
+          - EncryptedConfigValue.Module
+          - EncryptedConfigValue.AspNetCore
+          - EncryptedConfigValue.Cli
+      dotnet-version:
+        required: true
+        type: choice
+        options:
+          - 8.0
+          - 7.0
+          - 6.0
+      dry-run:
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      module: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+  
+      - name: Validate
+        id: validate
+        run: |
+          IFS=',' read -r -a username_array <<< "${{ secrets.ACCEPT_RELEASE_PR_ALLOW_LIST }}"
+          user_found=false
+          for username in "${username_array[@]}"
+          do
+              if [ "$username" == "${{ github.actor }}" ]; then
+                  user_found=true
+                  break
+              fi
+          done
+          if [ "$user_found" = "false" ]; then
+            echo "User ${{ github.actor }} is not authorized to execute this workflow."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          version=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' ./${{ inputs.project }}/${{ inputs.project }}.nuspec)
+          version_of_last_release=$(git tag -l "${{ inputs.project }}/*" | sort -V | tail -n 1 | sed 's/${{ inputs.project }}\///')
+          if [[ "$version" == "$version_of_last_release" ]]; then
+            echo "Version in ${{ inputs.project }}.nuspec is same as version of last release. Please update the nuspec file before proceeding with the release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+            echo "Version in ${{ inputs.project }}.nuspec is lower than or equal to the version of the last release. Please update the nuspec file with a higher version."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+  release:
+    needs: [validate]
+    if: needs.validate.outputs.module == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/release-action
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          project: ${{ inputs.project }}
+          dotnet-version: ${{ inputs.dotnet-version }}
+          dry-run: ${{ inputs.dry-run }}
+
+  tag:
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      
+      - name: Setup git
+        shell: bash
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Tag
+        shell: bash
+        run: |
+          version=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' ./${{ inputs.project }}/${{ inputs.project }}.nuspec)
+          hash=$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./${{ inputs.project }}/${{ inputs.project }}.nuspec)
+ 
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "git tag -a \"${{ inputs.project }}/net${{ inputs.dotnet-version }}/$version\" -m \"${{ inputs.project }} v$version\" $hash"
+            echo "git push origin tag \"${{ inputs.project }}/net${{ inputs.dotnet-version }}/$version\""
+          else
+            git tag -a "${{ inputs.project }}/net${{ inputs.dotnet-version }}/$version" -m "${{ inputs.project }} v$version" $hash
+            git push origin tag "${{ inputs.project }}/net${{ inputs.dotnet-version }}/$version"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

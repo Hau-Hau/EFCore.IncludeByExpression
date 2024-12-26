@@ -1,0 +1,16 @@
+name: Commit changes
+description: Commit changes
+inputs:
+  message:
+    description: Commit message
+    required: true
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Commit changes
+      shell: bash
+      run: |
+        git add --all .
+        git commit -m "${{ inputs.message }}"
+
