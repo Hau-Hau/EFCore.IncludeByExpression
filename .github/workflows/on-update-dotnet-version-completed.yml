@@ -26,14 +26,18 @@ jobs:
             exit 0
           fi
 
+          echo "$GITHUB_HEAD_REF"
           is_listener="$([[ "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/update-dotnet-version$ ]] && echo true || echo false)"
           if [[ "$is_listener" == "false" ]]; then
+            echo "is_listner: $is_listener"
             echo "result=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
+          
+          echo "$PULL_REQUEST_MERGED"
           is_merged="$([[ "$PULL_REQUEST_MERGED" == "true" ]] && echo true || echo false)"
           if [[ "$is_merged" == "false" ]]; then
+            echo "is_merged: $is_merged"
             echo "result=false" >> $GITHUB_OUTPUT
             exit 0
           fi
