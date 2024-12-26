@@ -1,0 +1,27 @@
+name: Push changes
+description: Push changes
+inputs:
+  branch:
+    description: Branch name
+    required: true
+  force:
+    description: "Allowed values: true | false | undefined"
+    required: false
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Push changes
+      shell: bash
+      run: |
+        IS_BRANCH_EXISTS=$(git ls-remote --heads origin "${{ inputs.branch }}" | grep -q "refs/heads/${{ inputs.branch }}" && echo true || echo false)
+        if [[ "$IS_BRANCH_EXISTS" == "true" ]]; then
+          if [[ "${{ inputs.force }}" == "true" ]]; then
+            git push --force origin "${{ inputs.branch }}"
+          else 
+            git push origin "${{ inputs.branch }}"
+          fi
+        else
+          git push --set-upstream origin "${{ inputs.branch }}"
+        fi
+
