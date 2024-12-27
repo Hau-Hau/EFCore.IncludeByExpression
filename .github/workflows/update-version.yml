@@ -135,25 +135,6 @@ jobs:
         id: finalize
         shell: pwsh
         run: |
-          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
-          $csprojXml = New-Object System.Xml.XmlDocument
-          $csprojXml.PreserveWhitespace = $true
-          $csprojXml.Load($csProjPath)          
-          $packageVersion = $null
-          $propertyGroups = $csprojXml.SelectNodes("//PropertyGroup")
-          foreach ($group in $propertyGroups) {
-              $versionNode = $group.SelectSingleNode("PackageVersion")
-              if ($versionNode -ne $null) {
-                  $packageVersion = $versionNode.InnerText.Trim()
-                  break
-              }
-          }
-
-          if ([string]::IsNullOrWhiteSpace($packageVersion)) {
-              Write-Host "PackageVersion is empty or not found"
-              "value=false" >> $env:GITHUB_OUTPUT
-              exit 0
-          }
           "value=${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   lib:
     needs: [can-bump-version-lib]
