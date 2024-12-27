@@ -78,8 +78,7 @@ jobs:
 
       - uses: ./.github/actions/setup-git
         with:
-          branch: ${{ github.base_ref || inputs.branch }}
-          hard-reset: ${{ github.base_ref || inputs.branch }}
+          branch: ${{ inputs.branch || github.base_ref }}
 
       - uses: ./.github/actions/has-changes
         id: has-changes-lib
@@ -91,14 +90,14 @@ jobs:
         shell: pwsh
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
-          $csprojXml = [xml](Get-Content $csProjPath)
-          $currentVersion = "$($csprojXml.Project.PropertyGroup.PackageVersion)".Trim()
+          $content = Get-Content -Path $csProjPath -Raw
+          $pattern = '<PackageVersion>(.*?)<\/PackageVersion>'
+          $matches = [regex]::Matches($content, $pattern)
+          $currentVersion = $matches[0].Groups[1].Value
           if ($currentVersion.Length -eq 0) {
-            Write-Host "lib #1"
             "value=false" >> $env:GITHUB_OUTPUT
             exit 0
           }
-          Write-Host "lib #2 ${{ steps.has-changes-lib.outputs.result || inputs.force == true }}"
           "value=${{ steps.has-changes-lib.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   
   can-bump-version-abstractions:
@@ -113,8 +112,7 @@ jobs:
 
       - uses: ./.github/actions/setup-git
         with:
-          branch: ${{ github.base_ref || inputs.branch }}
-          hard-reset: ${{ github.base_ref || inputs.branch }}
+          branch: ${{ inputs.branch || github.base_ref }}
 
       - uses: ./.github/actions/has-changes
         id: has-changes-abstractions
@@ -126,14 +124,14 @@ jobs:
         shell: pwsh
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
-          $csprojXml = [xml](Get-Content $csProjPath)
-          $currentVersion = "$($csprojXml.Project.PropertyGroup.PackageVersion)".Trim()
+          $content = Get-Content -Path $csProjPath -Raw
+          $pattern = '<PackageVersion>(.*?)<\/PackageVersion>'
+          $matches = [regex]::Matches($content, $pattern)
+          $currentVersion = $matches[0].Groups[1].Value
           if ($currentVersion.Length -eq 0) {
-            Write-Host "abstractions #1"
             "value=false" >> $env:GITHUB_OUTPUT
             exit 0
           }
-          Write-Host "abstractions #2 ${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}"
           "value=${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   lib:
     needs: [can-bump-version-lib]
@@ -155,20 +153,31 @@ jobs:
         id: set-branch-name
         run: |
           echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
+      - name: Reset branch
+        run: |
+          BRANCH="${{ steps.set-branch-name.outputs.value }}"
+          is_branch_exists_origin=$(git ls-remote --heads origin $BRANCH | grep -q "refs/heads/$BRANCH" && echo true || echo false)
+          if [[ "$is_branch_exists_origin" == "true" ]]; then
+            git push origin --delete $BRANCH || { echo "Failed to delete branch $BRANCH on origin."; exit 1; }
+          fi
       - uses: ./.github/actions/setup-git
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
-          hard-reset: ${{ github.base_ref || inputs.branch }}
+          hard-reset: ${{ inputs.branch || github.base_ref }}
       - name: Update csproj
         shell: pwsh
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "${{ steps.set-project-name.outputs.value }}", "${{ steps.set-project-name.outputs.value }}.csproj"))"
-          $csprojXml = [xml](Get-Content $csProjPath)
-          $currentVersion = $csprojXml.Project.PropertyGroup.PackageVersion
+          $content = Get-Content -Path $csProjPath -Raw
+          $pattern = '<PackageVersion>(.*?)<\/PackageVersion>'
+          $matches = [regex]::Matches($content, $pattern)
+          if ($matches.Count -le 0) {
+              Write-Output "PackageVersion not found!"
+          }
+          $currentVersion = $matches[0].Groups[1].Value
           $versionSplitted = $currentVersion -split '\.'
           $versionSplitted[2] = ([int]$versionSplitted[2]) + 1
           $newVersion = $versionSplitted -join '.'
-          $content = Get-Content -Path $csProjPath -Raw
           $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
           Set-Content -Path $csProjPath -Value $updatedContent
       - uses: ./.github/actions/commit-changes
@@ -206,20 +215,31 @@ jobs:
         id: set-branch-name
         run: |
           echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
+      - name: Reset branch
+        run: |
+          BRANCH="${{ steps.set-branch-name.outputs.value }}"
+          is_branch_exists_origin=$(git ls-remote --heads origin $BRANCH | grep -q "refs/heads/$BRANCH" && echo true || echo false)
+          if [[ "$is_branch_exists_origin" == "true" ]]; then
+            git push origin --delete $BRANCH || { echo "Failed to delete branch $BRANCH on origin."; exit 1; }
+          fi
       - uses: ./.github/actions/setup-git
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
-          hard-reset: ${{ github.base_ref || inputs.branch }}
+          hard-reset: ${{ inputs.branch || github.base_ref }}
       - name: Update csproj
         shell: pwsh
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "${{ steps.set-project-name.outputs.value }}", "${{ steps.set-project-name.outputs.value }}.csproj"))"
-          $csprojXml = [xml](Get-Content $csProjPath)
-          $currentVersion = $csprojXml.Project.PropertyGroup.PackageVersion
+          $content = Get-Content -Path $csProjPath -Raw
+          $pattern = '<PackageVersion>(.*?)<\/PackageVersion>'
+          $matches = [regex]::Matches($content, $pattern)
+          if ($matches.Count -le 0) {
+              Write-Output "PackageVersion not found!"
+          }
+          $currentVersion = $matches[0].Groups[1].Value
           $versionSplitted = $currentVersion -split '\.'
           $versionSplitted[2] = ([int]$versionSplitted[2]) + 1
           $newVersion = $versionSplitted -join '.'
-          $content = Get-Content -Path $csProjPath -Raw
           $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
           Set-Content -Path $csProjPath -Value $updatedContent
       - uses: ./.github/actions/commit-changes
