@@ -11,11 +11,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
-
     - name: Validate
       shell: pwsh
       id: validate
