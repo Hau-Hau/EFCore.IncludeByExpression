@@ -10,7 +10,7 @@ jobs:
       - uses: ./.github/actions/setup-dotnet
 
       - name: Build
-        run: dotnet build ./EFCore.IncludeByExpression --configuration Debug
+        run: dotnet build . --configuration Debug
 
       - name: Test
         run: dotnet test --no-restore --verbosity normal
