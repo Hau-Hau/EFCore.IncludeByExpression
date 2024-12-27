@@ -20,7 +20,13 @@ runs:
           echo "IS_TARGET_BRANCH_EXISTS=$IS_TARGET_BRANCH_EXISTS" >> $GITHUB_ENV
           if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
             git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
-            git checkout -B $TARGET_BRANCH_NAME
+            if [ `git rev-parse --verify $TARGET_BRANCH_NAME 2>/dev/null` ]
+            then
+              git checkout $TARGET_BRANCH_NAME
+            else
+              git checkout --track -b $TARGET_BRANCH_NAME origin/$TARGET_BRANCH_NAME
+            fi
+
             if [[ "${{ inputs.hard-reset }}" != "" ]]; then
               git reset --hard origin/${{ inputs.hard-reset }}
             fi
