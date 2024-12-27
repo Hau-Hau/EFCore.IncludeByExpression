@@ -19,10 +19,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v4
-
-    - uses: ./.github/actions/setup-dotnet
-
     - name: Build
       shell: bash
       run: dotnet build "${{ inputs.solution }}" --configuration Release
@@ -34,7 +30,7 @@ runs:
     - name: Push NuGet package
       shell: bash
       run: |
-        version=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' ./${{ inputs.project }}/${{ inputs.project }}.nuspec)
+        version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./${{ inputs.project }}/${{ inputs.project }}.csproj)
         artefact_path=$(find "./${{ inputs.project }}/bin/Release/" -maxdepth 1 -type f -name "*.$version.nupkg" | sort -V | tail -n 1 | xargs)
 
         if [[ "${{ inputs.dry-run }}" == "true" ]]; then

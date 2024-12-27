@@ -1,4 +1,4 @@
-name: Update versions
+name: Update lib version
 
 on:
   # Do not edit. Section is edited by pipeline.
@@ -12,7 +12,6 @@ on:
         required: true
         type: choice
         options:
-          - release/EFCore.IncludeByExpression.Abstractions
           - release/EFCore.IncludeByExpression/net9.0
           - release/EFCore.IncludeByExpression/net8.0
   # Do not edit. Section is edited by pipeline.
@@ -20,12 +19,11 @@ on:
     types: 
       - closed
     branches:
-      - release/EFCore.IncludeByExpression.Abstractions
       - release/EFCore.IncludeByExpression/net9.0
       - release/EFCore.IncludeByExpression/net8.0
 
 concurrency:
-  group: update-versions
+  group: update-lib-version-${{ inputs.branch || github.base_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -100,39 +98,6 @@ jobs:
           }
           "value=${{ steps.has-changes-lib.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   
-  can-bump-version-abstractions:
-    needs: [validate]
-    if: needs.validate.outputs.result == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      value: ${{ steps.finalize.outputs.value }}
-      
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/setup-git
-        with:
-          branch: ${{ inputs.branch || github.base_ref }}
-
-      - uses: ./.github/actions/has-changes
-        id: has-changes-abstractions
-        with:
-          project: EFCore.IncludeByExpression.Abstractions
-
-      - name: Finalize
-        id: finalize
-        shell: pwsh
-        run: |
-          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
-          $content = Get-Content -Path $csProjPath -Raw
-          $pattern = '<PackageVersion>(.*?)<\/PackageVersion>'
-          $matches = [regex]::Matches($content, $pattern)
-          $currentVersion = $matches[0].Groups[1].Value
-          if ($currentVersion.Length -eq 0) {
-            "value=false" >> $env:GITHUB_OUTPUT
-            exit 0
-          }
-          "value=${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   lib:
     needs: [can-bump-version-lib]
     if: needs.can-bump-version-lib.outputs.value == 'true'
@@ -193,66 +158,4 @@ jobs:
           title: Update ${{ steps.set-project-name.outputs.value }}.csproj
           body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.csproj file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
           from: ${{ steps.set-branch-name.outputs.value }}
-          into: ${{ github.base_ref || inputs.branch }}
-
-  abstractions:
-    needs: [can-bump-version-abstractions]
-    if: needs.can-bump-version-abstractions.outputs.value == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      project: ${{ steps.set-project-name.outputs.value }}
-      branch: ${{ steps.set-branch-name.outputs.value }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set project name
-        id: set-project-name
-        run: |
-          echo "value=EFCore.IncludeByExpression.Abstractions" >> $GITHUB_OUTPUT
-      - name: Set branch name
-        id: set-branch-name
-        run: |
-          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
-      - name: Reset branch
-        run: |
-          BRANCH="${{ steps.set-branch-name.outputs.value }}"
-          is_branch_exists_origin=$(git ls-remote --heads origin $BRANCH | grep -q "refs/heads/$BRANCH" && echo true || echo false)
-          if [[ "$is_branch_exists_origin" == "true" ]]; then
-            git push origin --delete $BRANCH || { echo "Failed to delete branch $BRANCH on origin."; exit 1; }
-          fi
-      - uses: ./.github/actions/setup-git
-        with:
-          branch: ${{ steps.set-branch-name.outputs.value }}
-          hard-reset: ${{ inputs.branch || github.base_ref }}
-      - name: Update csproj
-        shell: pwsh
-        run: |
-          $csProjPath = "$([IO.Path]::Combine(".", "${{ steps.set-project-name.outputs.value }}", "${{ steps.set-project-name.outputs.value }}.csproj"))"
-          $content = Get-Content -Path $csProjPath -Raw
-          $pattern = '<PackageVersion>(.*?)<\/PackageVersion>'
-          $matches = [regex]::Matches($content, $pattern)
-          if ($matches.Count -le 0) {
-              Write-Output "PackageVersion not found!"
-          }
-          $currentVersion = $matches[0].Groups[1].Value
-          $versionSplitted = $currentVersion -split '\.'
-          $versionSplitted[2] = ([int]$versionSplitted[2]) + 1
-          $newVersion = $versionSplitted -join '.'
-          $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
-          Set-Content -Path $csProjPath -Value $updatedContent
-      - uses: ./.github/actions/commit-changes
-        with:
-          message: Update ${{ steps.set-project-name.outputs.value }}.csproj
-      - uses: ./.github/actions/push-changes
-        with:
-          branch: ${{ steps.set-branch-name.outputs.value }}
-          force: true
-      - uses: ./.github/actions/put-pull-request
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          title: Update ${{ steps.set-project-name.outputs.value }}.csproj
-          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.csproj file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
-          from: ${{ steps.set-branch-name.outputs.value }}
-          into: ${{ github.base_ref || inputs.branch }}
+          into: ${{ inputs.branch || github.base_ref}}
