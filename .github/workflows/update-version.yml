@@ -90,15 +90,24 @@ jobs:
         id: finalize
         shell: pwsh
         run: |
-          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
-          $csprojXml = [xml](Get-Content $csProjPath)
-          $currentVersion = "$($csprojXml.Project.PropertyGroup.PackageVersion)".Trim()
-          if ($currentVersion.Length -eq 0) {
-            Write-Host "lib #1"
-            "value=false" >> $env:GITHUB_OUTPUT
-            exit 0
+          $csProjPath = "$([IO.Path]::Combine((Get-Location).Path, "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
+          $csprojXml = New-Object System.Xml.XmlDocument
+          $csprojXml.PreserveWhitespace = $true
+          $csprojXml.Load($csProjPath)          $packageVersion = $null
+          $propertyGroups = $csprojXml.SelectNodes("//PropertyGroup")
+          foreach ($group in $propertyGroups) {
+              $versionNode = $group.SelectSingleNode("PackageVersion")
+              if ($versionNode -ne $null) {
+                  $packageVersion = $versionNode.InnerText.Trim()
+                  break
+              }
           }
-          Write-Host "lib #2 ${{ steps.has-changes-lib.outputs.result || inputs.force == true }}"
+
+          if ([string]::IsNullOrWhiteSpace($packageVersion)) {
+              Write-Host "PackageVersion is empty or not found"
+              "value=false" >> $env:GITHUB_OUTPUT
+              exit 0
+          }          
           "value=${{ steps.has-changes-lib.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   
   can-bump-version-abstractions:
@@ -125,19 +134,24 @@ jobs:
         id: finalize
         shell: pwsh
         run: |
-          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
-          $csprojXml = [xml](Get-Content $csProjPath)
-          $currentVersion = "$($csprojXml.Project.PropertyGroup.PackageVersion)".Trim()
-          Write-Host $csProjPath
-          Write-Host $csprojXml
-          Write-Host $csprojXml.Project.PropertyGroup.PackageVersion
-          Write-Host $currentVersion
-          if ($currentVersion.Length -eq 0) {
-            Write-Host "abstractions #1"
-            "value=false" >> $env:GITHUB_OUTPUT
-            exit 0
+          $csProjPath = "$([IO.Path]::Combine((Get-Location).Path, "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
+          $csprojXml = New-Object System.Xml.XmlDocument
+          $csprojXml.PreserveWhitespace = $true
+          $csprojXml.Load($csProjPath)          $packageVersion = $null
+          $propertyGroups = $csprojXml.SelectNodes("//PropertyGroup")
+          foreach ($group in $propertyGroups) {
+              $versionNode = $group.SelectSingleNode("PackageVersion")
+              if ($versionNode -ne $null) {
+                  $packageVersion = $versionNode.InnerText.Trim()
+                  break
+              }
           }
-          Write-Host "abstractions #2 ${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}"
+
+          if ([string]::IsNullOrWhiteSpace($packageVersion)) {
+              Write-Host "PackageVersion is empty or not found"
+              "value=false" >> $env:GITHUB_OUTPUT
+              exit 0
+          }
           "value=${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   lib:
     needs: [can-bump-version-lib]
