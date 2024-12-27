@@ -5,7 +5,7 @@ inputs:
     description: branch
     required: true
   hard-reset:
-    description: "Allowed values: true | false | undefined"
+    description: "Branch name to which hard reset"
     required: false
 runs:
   using: "composite"
@@ -21,8 +21,8 @@ runs:
           if [[ "$IS_TARGET_BRANCH_EXISTS" == "true" ]]; then
             git fetch origin $TARGET_BRANCH_NAME:$TARGET_BRANCH_NAME
             git checkout -B $TARGET_BRANCH_NAME
-            if [[ "${{ inputs.hard-reset }}" == "true" ]]; then
-              git reset --hard origin/main
+            if [[ "${{ inputs.hard-reset }}" != "" ]]; then
+              git reset --hard origin/${{ inputs.hard-reset }}
             fi
           else
             git checkout -b $TARGET_BRANCH_NAME

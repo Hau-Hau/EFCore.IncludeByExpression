@@ -25,7 +25,7 @@ on:
       - release/EFCore.IncludeByExpression/net8.0
 
 concurrency:
-  group: update-nuspec
+  group: update-versions
   cancel-in-progress: true
 
 jobs:
@@ -67,21 +67,54 @@ jobs:
 
           echo "result=true" >> $GITHUB_OUTPUT
 
-  has-changes:
+  can-bump-version-lib:
     needs: [validate]
     if: needs.validate.outputs.result == 'true'
     runs-on: ubuntu-latest
     outputs:
-      lib: ${{ steps.finalize.outputs.lib }}
-      abstractions: ${{ steps.finalize.outputs.abstractions }}
-      
+      value: ${{ steps.finalize.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ github.base_ref || inputs.branch }}
+          hard-reset: ${{ github.base_ref || inputs.branch }}
 
       - uses: ./.github/actions/has-changes
         id: has-changes-lib
         with:
           project: EFCore.IncludeByExpression
+
+      - name: Finalize
+        id: finalize
+        shell: pwsh
+        run: |
+          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
+          $csprojXml = [xml](Get-Content $csProjPath)
+          $currentVersion = "$($csprojXml.Project.PropertyGroup.PackageVersion)".Trim()
+          if ($currentVersion.Length -eq 0) {
+            Write-Host "lib #1"
+            "value=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          Write-Host "lib #2 ${{ steps.has-changes-lib.outputs.result || inputs.force == true }}"
+          "value=${{ steps.has-changes-lib.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
+  
+  can-bump-version-abstractions:
+    needs: [validate]
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.finalize.outputs.value }}
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ github.base_ref || inputs.branch }}
+          hard-reset: ${{ github.base_ref || inputs.branch }}
 
       - uses: ./.github/actions/has-changes
         id: has-changes-abstractions
@@ -90,13 +123,21 @@ jobs:
 
       - name: Finalize
         id: finalize
+        shell: pwsh
         run: |
-          echo "lib=${{ steps.has-changes-lib.outputs.result }}" >> $GITHUB_OUTPUT
-          echo "abstractions=${{ steps.has-changes-abstractions.outputs.result }}" >> $GITHUB_OUTPUT
-
+          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
+          $csprojXml = [xml](Get-Content $csProjPath)
+          $currentVersion = "$($csprojXml.Project.PropertyGroup.PackageVersion)".Trim()
+          if ($currentVersion.Length -eq 0) {
+            Write-Host "abstractions #1"
+            "value=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          Write-Host "abstractions #2 ${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}"
+          "value=${{ steps.has-changes-abstractions.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   lib:
-    needs: [has-changes]
-    if: inputs.force == true || needs.has-changes.outputs.lib == 'true'
+    needs: [can-bump-version-lib]
+    if: needs.can-bump-version-lib.outputs.value == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -116,17 +157,23 @@ jobs:
           echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
       - uses: ./.github/actions/setup-git
         with:
-          branch: ${{ github.base_ref || inputs.branch }}
-          hard-reset: main
-      - uses: ./.github/actions/update-nuspec-file
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          project: ${{ steps.set-project-name.outputs.value }}
-          additional-files: |
-            ./Readme.md
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          hard-reset: ${{ github.base_ref || inputs.branch }}
+      - name: Update csproj
+        shell: pwsh
+        run: |
+          $csProjPath = "$([IO.Path]::Combine(".", "${{ steps.set-project-name.outputs.value }}", "${{ steps.set-project-name.outputs.value }}.csproj"))"
+          $csprojXml = [xml](Get-Content $csProjPath)
+          $currentVersion = $csprojXml.Project.PropertyGroup.PackageVersion
+          $versionSplitted = $currentVersion -split '\.'
+          $versionSplitted[2] = ([int]$versionSplitted[2]) + 1
+          $newVersion = $versionSplitted -join '.'
+          $content = Get-Content -Path $csProjPath -Raw
+          $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
+          Set-Content -Path $csProjPath -Value $updatedContent
       - uses: ./.github/actions/commit-changes
         with:
-          message: Update ${{ steps.set-project-name.outputs.value }}.nuspec
+          message: Update ${{ steps.set-project-name.outputs.value }}.csproj
       - uses: ./.github/actions/push-changes
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
@@ -134,14 +181,14 @@ jobs:
       - uses: ./.github/actions/put-pull-request
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          title: Update ${{ steps.set-project-name.outputs.value }}.nuspec
-          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          title: Update ${{ steps.set-project-name.outputs.value }}.csproj
+          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.csproj file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
           from: ${{ steps.set-branch-name.outputs.value }}
           into: ${{ github.base_ref || inputs.branch }}
 
   abstractions:
-    needs: [has-changes]
-    if: inputs.force == true || needs.has-changes.outputs.abstractions == 'true'
+    needs: [can-bump-version-abstractions]
+    if: needs.can-bump-version-abstractions.outputs.value == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -158,19 +205,26 @@ jobs:
       - name: Set branch name
         id: set-branch-name
         run: |
-          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-nuspec" >> $GITHUB_OUTPUT
+          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
       - uses: ./.github/actions/setup-git
         with:
-          branch: ${{ github.base_ref || inputs.branch }}
-      - uses: ./.github/actions/update-nuspec-file
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          project: ${{ steps.set-project-name.outputs.value }}
-          additional-files: |
-            ./Readme.md
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          hard-reset: ${{ github.base_ref || inputs.branch }}
+      - name: Update csproj
+        shell: pwsh
+        run: |
+          $csProjPath = "$([IO.Path]::Combine(".", "${{ steps.set-project-name.outputs.value }}", "${{ steps.set-project-name.outputs.value }}.csproj"))"
+          $csprojXml = [xml](Get-Content $csProjPath)
+          $currentVersion = $csprojXml.Project.PropertyGroup.PackageVersion
+          $versionSplitted = $currentVersion -split '\.'
+          $versionSplitted[2] = ([int]$versionSplitted[2]) + 1
+          $newVersion = $versionSplitted -join '.'
+          $content = Get-Content -Path $csProjPath -Raw
+          $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
+          Set-Content -Path $csProjPath -Value $updatedContent
       - uses: ./.github/actions/commit-changes
         with:
-          message: Update ${{ steps.set-project-name.outputs.value }}.nuspec
+          message: Update ${{ steps.set-project-name.outputs.value }}.csproj
       - uses: ./.github/actions/push-changes
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
@@ -178,7 +232,7 @@ jobs:
       - uses: ./.github/actions/put-pull-request
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          title: Update ${{ steps.set-project-name.outputs.value }}.nuspec
-          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.nuspec file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
+          title: Update ${{ steps.set-project-name.outputs.value }}.csproj
+          body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.csproj file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
           from: ${{ steps.set-branch-name.outputs.value }}
           into: ${{ github.base_ref || inputs.branch }}
