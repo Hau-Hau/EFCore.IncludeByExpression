@@ -1,0 +1,350 @@
+name: Update dotnet version
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * MON'
+
+concurrency:
+  group: update-dotnet-version
+  cancel-in-progress: true
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      active-dotnet-version: ${{ steps.active-dotnet-version.outputs.value }}
+      branch: ${{ steps.set-branch-name.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set branch name
+        id: set-branch-name
+        run: |
+          echo "value=bot/update-dotnet-version" >> $GITHUB_OUTPUT
+      - name: Get active .NET versions
+        id: active-dotnet-version
+        shell: pwsh
+        run: |
+          $activeVersions = ((((Invoke-WebRequest -Uri "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json" -UseBasicParsing | ConvertFrom-Json)."releases-index" | Where-Object { $_."product" -eq ".NET" -and $_."support-phase" -eq "active" | Sort-Object -Property channel-version -Descending } | Select -Property channel-version)."channel-version") -split "," | ForEach-Object { "net$_" }) -join ","
+          if ([string]::IsNullOrWhitespace($activeVersions)) {
+            exit 1
+          }
+          "value=$($activeVersions)" >> $env:GITHUB_OUTPUT
+          exit 0
+      - name: "Reset branches"
+        run: |
+           BRANCHES=(
+             "${{ steps.set-branch-name.outputs.value }}"
+             "${{ steps.set-branch-name.outputs.value }}/partial/EFCore.IncludeByExpression"
+             "${{ steps.set-branch-name.outputs.value }}/partial/pipelines"
+           )
+           for BRANCH in "${BRANCHES[@]}"; do
+             is_branch_exists_origin=$(git ls-remote --heads origin $BRANCH | grep -q "refs/heads/$BRANCH" && echo true || echo false)
+             if [[ "$is_branch_exists_origin" == "true" ]]; then
+               git push origin --delete $BRANCH || { echo "Failed to delete branch $BRANCH on origin."; exit 1; }
+             fi
+           done
+
+  should-updated-targetframeworks:
+    needs: [init]
+    runs-on: ubuntu-latest
+    outputs:
+      lib: ${{ steps.finalize.outputs.lib }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/can-update-targetframeworks
+        id: lib
+        with:
+          project: EFCore.IncludeByExpression
+          target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
+      - name: Finalize
+        id: finalize
+        run: |
+          echo "lib=${{ steps.lib.outputs.result }}" >> $GITHUB_OUTPUT
+
+  update-dotnet-lib:
+    needs: [init, should-updated-targetframeworks]
+    if: needs.should-updated-targetframeworks.outputs.lib == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      project: ${{ steps.set-project-name.outputs.value }}
+      branch: ${{ steps.set-branch-name.outputs.value }}
+      status: ${{ steps.set-status.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set project name
+        id: set-project-name
+        run: |
+          echo "value=EFCore.IncludeByExpression" >> $GITHUB_OUTPUT
+      - name: Set branch name
+        id: set-branch-name
+        run: |
+          echo "value=${{ needs.init.outputs.branch }}/partial/${{ steps.set-project-name.outputs.value }}" >> $GITHUB_OUTPUT
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          hard-reset: main
+      - uses: ./.github/actions/update-dotnet-version
+        with:
+          project: ${{ steps.set-project-name.outputs.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
+      - uses: ./.github/actions/update-dotnet-version
+        with:
+          project: ${{ steps.set-project-name.outputs.value }}.Tests
+          target-dotnet-versions: ${{ needs.init.outputs.active-dotnet-version }}
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update .NET version in ${{ steps.set-project-name.outputs.value }}
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          force: true
+      - name: Set status
+        id: set-status
+        run: |
+          echo "value=true" >> $GITHUB_OUTPUT
+
+  status-tracker-lib:
+    needs: [update-dotnet-lib]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      completed: ${{ steps.set-status.outputs.value }}
+    steps:
+      - name: Set status
+        id: set-status
+        run: |
+          echo "value=${{needs.update-dotnet-lib.outputs.status || 'false'}}" >> $GITHUB_OUTPUT
+  
+  update-pipelines:
+    needs: [init, should-updated-targetframeworks]
+    if: needs.should-updated-targetframeworks.outputs.lib == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+    outputs:
+      branch: ${{ steps.set-branch-name.outputs.value }}
+      status: ${{ steps.set-status.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+      - name: Set branch name
+        id: set-branch-name
+        run: |
+          echo "value=${{ needs.init.outputs.branch }}/partial/pipelines" >> $GITHUB_OUTPUT
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          hard-reset: main
+      - name: Update setup-dotnet/action.yml action
+        shell: pwsh
+        run: |
+          $filePath = "./.github/actions/setup-dotnet/action.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $versions = $versionString -split ',' | ForEach-Object { ($_ -replace 'net', '') + ".x" }
+          $yamlContent = Get-Content $filePath -Raw
+          $dotnetVersionPattern = "(?sm)dotnet-version:\s*\|.*?(?=\w+:|\z)"
+          $indentation = if ($yamlContent -match "([ \t]*)dotnet-version: \|") { "$($matches[1])  " } else { "" }
+          $newDotnetVersionSection = "dotnet-version: |`r`n${indentation}" + ($versions | ForEach-Object { "${indentation}$_" } | Out-String).Trim()
+          $updatedYamlContent = $yamlContent -replace $dotnetVersionPattern, $newDotnetVersionSection
+          Set-Content $filePath -Value $updatedYamlContent
+      - name: Update release-lib.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/workflows/release-lib.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $newOptions = @($versionString -split ',')
+          $yamlContent = Get-Content $filePath -Raw
+          $newOptionsString = "`n          - " + ($newOptions -join "`n          - ")
+          $pattern = '(?ms)(dotnet:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [0-9.]+)+(?=\s+\w+:|\s*$)'
+          $replacement = "`$1$newOptionsString"
+          $updatedContent = $yamlContent -replace $pattern, $replacement
+          $updatedContent | Set-Content -Path $filePath -NoNewline
+      # - name: Update tests.yml workflow
+      #   shell: pwsh
+      #   run: |
+      #     $filePath = "./.github/workflows/tests.yml"
+      #     $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+      #     $newOptions = @("main") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') }) + @("release/EFCore.IncludeByExpression.Abstractions")
+      #     $yamlContent = Get-Content $filePath -Raw
+      #     $newBranchesString = "`n      - " + ($newOptions -join "`n      - ")
+      #     $pattern = '(?ms)(push:\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+      #     $replacement = "`$1$newBranchesString"
+      #     $updatedContent = $yamlContent -replace $pattern, $replacement
+      #     $updatedContent | Set-Content -Path $filePath -NoNewline
+      - name: Update coverage.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/workflows/coverage.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $highestVersion = @($versionString -split ',') | ForEach-Object { $_.Replace("net", "") } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1
+          $highestNetVersion = "net$($highestVersion.ToString(2))"
+          $highestDotNetVersion = "$($highestVersion.ToString(2)).x"
+          $content = Get-Content -Path $filePath -Raw
+          $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $highestDotNetVersion"
+          $content = $content -replace '--framework net\d+\.\d+', "--framework $highestNetVersion"
+          $content = $content -replace 'coverage\.net\d+\.\d+\.info', "coverage.$highestNetVersion.info"
+          $content | Set-Content -Path $filePath -NoNewline
+      - name: Update update-version.yml workflow
+        shell: pwsh
+        run: |
+          $filePath = "./.github/workflows/update-version.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $newOptions = @("release/EFCore.IncludeByExpression.Abstractions") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') })
+          $yamlContent = Get-Content $filePath -Raw
+          
+          $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
+          $newPRBranchesString = "`n      - " + ($newOptions -join "`n      - ")
+          
+          $optionsPattern = '(?ms)(branch:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+          $optionsReplacement = "`$1$newBranchesString"
+          $updatedContent = $yamlContent -replace $optionsPattern, $optionsReplacement
+          
+          $branchesPattern = '(?ms)(pull_request:\s+types:\s+- closed\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
+          $branchesReplacement = "`$1$newPRBranchesString"
+          $updatedContent = $updatedContent -replace $branchesPattern, $branchesReplacement
+
+          $updatedContent | Set-Content -Path $filePath -NoNewline
+      - name: Regenerate dependabot.yml
+        shell: pwsh
+        run: |
+          $filePath = "./.github/dependabot.yml"
+          $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
+          $dotnetVersions = @($versionString -split ',')
+          $baseYaml = @(
+              "#------------------------------------------------------------------------------",
+              "# This code was generated by update-dotnet-version.yml pipeline.",
+              "# Changes to this file will be lost if the code is regenerated.",
+              "#------------------------------------------------------------------------------",
+              "version: 2",
+              "updates:",
+              "  - package-ecosystem: nuget",
+              "    directory: `"/`"",
+              "    schedule:",
+              "      interval: daily",
+              "  - package-ecosystem: nuget",
+              "    target-branch: release/EFCore.IncludeByExpression.Abstractions",
+              "    directory: `"/EFCore.IncludeByExpression.Abstractions/`"",
+              "    schedule:",
+              "      interval: daily"
+          )
+          $baseYaml | Out-File -FilePath $filePath -Encoding utf8
+          foreach ($dotnetVersion in $dotnetVersions) {
+              $additionalEntry = @(
+                  "  - package-ecosystem: nuget",
+                  "    target-branch: release/EFCore.IncludeByExpression/$dotnetVersion",
+                  "    directory: `"/EFCore.IncludeByExpression/`"",
+                  "    schedule:",
+                  "      interval: daily"
+              )
+              $additionalEntry | Out-File -FilePath $filePath -Encoding utf8 -Append
+          }
+      - uses: ./.github/actions/commit-changes
+        with:
+          message: Update pipelines
+      - uses: ./.github/actions/push-changes
+        with:
+          branch: ${{ steps.set-branch-name.outputs.value }}
+          force: true
+      - name: Set status
+        id: set-status
+        run: |
+          echo "value=true" >> $GITHUB_OUTPUT
+
+  status-tracker-pipelines:
+    needs: [update-pipelines]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      completed: ${{ steps.set-status.outputs.value }}
+    steps:
+      - name: Set status
+        id: set-status
+        run: |
+          echo "value=${{needs.update-pipelines.outputs.status || 'false'}}" >> $GITHUB_OUTPUT
+
+  collect:
+    needs: [
+      status-tracker-lib,
+      status-tracker-pipelines,
+    ]
+    if: always() && contains(needs.*.outputs.completed, 'true') 
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.set-status.outputs.value }}
+    steps:
+      - name: Set status
+        id: set-status
+        run: |
+          values=(
+            '${{ needs.status-tracker-lib.outputs.completed || 'false' }}'
+            '${{ needs.status-tracker-pipelines.outputs.completed || 'false' }}'
+          )
+          result='false'
+          for value in "${values[@]}"; do
+            if [ "$value" == "true" ]; then
+              result='true'
+              break
+            fi
+          done
+          echo "value=$result" >> $GITHUB_OUTPUT
+
+  finalize:
+    needs: [
+        init,
+        collect
+    ]
+    if: always() && needs.collect.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+        - uses: actions/checkout@v4
+          with:
+            token: ${{ secrets.WORKFLOW_TOKEN }}
+        - uses: ./.github/actions/setup-git
+          with:
+            branch: ${{ needs.init.outputs.branch }}
+            hard-reset: main
+        - name: Merge
+          run: |
+           TARGET_BRANCH="${{ needs.init.outputs.branch }}"
+           PARTIAL_BRANCHES=(
+             "${{ needs.init.outputs.branch }}/partial/EFCore.IncludeByExpression"
+             "${{ needs.init.outputs.branch }}/partial/pipelines"
+           )
+           for BRANCH in "${PARTIAL_BRANCHES[@]}"; do
+             is_branch_exists=$(git ls-remote --heads origin $BRANCH | grep -q "refs/heads/$BRANCH" && echo true || echo false)
+             if [[ "$is_branch_exists" == "true" ]]; then
+               git fetch origin "$BRANCH"
+               hash=$(git ls-remote origin "$BRANCH" | cut -f1)
+               git rebase "$hash"
+               echo "Rebase successful for $BRANCH."
+             fi
+           done
+
+           for BRANCH in "${PARTIAL_BRANCHES[@]}"; do
+             is_branch_exists_origin=$(git ls-remote --heads origin $BRANCH | grep -q "refs/heads/$BRANCH" && echo true || echo false)
+             if [[ "$is_branch_exists_origin" == "true" ]]; then           
+               echo "Deleting branch $BRANCH on origin..."
+               git push origin --delete $BRANCH || { echo "Failed to delete branch $BRANCH on origin. Continuing."; }
+             fi 
+           done
+        - uses: ./.github/actions/push-changes
+          with:
+            branch: ${{ needs.init.outputs.branch }}
+            force: true
+        - uses: ./.github/actions/put-pull-request
+          with:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            title: Update .NET versions
+            body: This PR updates .NET version used in project and pipelines.
+            from: ${{ needs.init.outputs.branch }}
+            into: main
