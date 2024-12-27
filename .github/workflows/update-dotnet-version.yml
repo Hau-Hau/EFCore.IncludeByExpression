@@ -191,12 +191,12 @@ jobs:
           $content = $content -replace '--framework net\d+\.\d+', "--framework $highestNetVersion"
           $content = $content -replace 'coverage\.net\d+\.\d+\.info', "coverage.$highestNetVersion.info"
           $content | Set-Content -Path $filePath -NoNewline
-      - name: Update update-version.yml workflow
+      - name: Update update-version-lib.yml workflow
         shell: pwsh
         run: |
-          $filePath = "./.github/workflows/update-version.yml"
+          $filePath = "./.github/workflows/update-version-lib.yml"
           $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
-          $newOptions = @("release/EFCore.IncludeByExpression.Abstractions") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') })
+          $newOptions = @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') })
           $yamlContent = Get-Content $filePath -Raw
           
           $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
