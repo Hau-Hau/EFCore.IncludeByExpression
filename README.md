@@ -1,5 +1,5 @@
 # EFCore.IncludeByExpression
-[![tests](https://github.com/Hau-Hau/EFCore.IncludeByExpression/actions/workflows/tests.yml/badge.svg)](https://github.com/Hau-Hau/EFCore.IncludeByExpression/actions/workflows/tests.yml)
+[![Tests](https://github.com/Hau-Hau/EFCore.IncludeByExpression/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/Hau-Hau/EFCore.IncludeByExpression/actions/workflows/test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Hau-Hau/EFCore.IncludeByExpression/badge.svg)](https://coveralls.io/github/Hau-Hau/EFCore.IncludeByExpression)
 
 
