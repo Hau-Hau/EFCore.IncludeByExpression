@@ -90,7 +90,7 @@ jobs:
         id: finalize
         shell: pwsh
         run: |
-          $csProjPath = "$([IO.Path]::Combine((Get-Location).Path, "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
+          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = New-Object System.Xml.XmlDocument
           $csprojXml.PreserveWhitespace = $true
           $csprojXml.Load($csProjPath)          
@@ -135,7 +135,7 @@ jobs:
         id: finalize
         shell: pwsh
         run: |
-          $csProjPath = "$([IO.Path]::Combine((Get-Location).Path, "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
+          $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
           $csprojXml = New-Object System.Xml.XmlDocument
           $csprojXml.PreserveWhitespace = $true
           $csprojXml.Load($csProjPath)          
