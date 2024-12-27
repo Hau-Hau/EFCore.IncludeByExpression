@@ -93,7 +93,8 @@ jobs:
           $csProjPath = "$([IO.Path]::Combine((Get-Location).Path, "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = New-Object System.Xml.XmlDocument
           $csprojXml.PreserveWhitespace = $true
-          $csprojXml.Load($csProjPath)          $packageVersion = $null
+          $csprojXml.Load($csProjPath)          
+          $packageVersion = $null
           $propertyGroups = $csprojXml.SelectNodes("//PropertyGroup")
           foreach ($group in $propertyGroups) {
               $versionNode = $group.SelectSingleNode("PackageVersion")
@@ -137,7 +138,8 @@ jobs:
           $csProjPath = "$([IO.Path]::Combine((Get-Location).Path, "EFCore.IncludeByExpression.Abstractions", "EFCore.IncludeByExpression.Abstractions.csproj"))"
           $csprojXml = New-Object System.Xml.XmlDocument
           $csprojXml.PreserveWhitespace = $true
-          $csprojXml.Load($csProjPath)          $packageVersion = $null
+          $csprojXml.Load($csProjPath)          
+          $packageVersion = $null
           $propertyGroups = $csprojXml.SelectNodes("//PropertyGroup")
           foreach ($group in $propertyGroups) {
               $versionNode = $group.SelectSingleNode("PackageVersion")
