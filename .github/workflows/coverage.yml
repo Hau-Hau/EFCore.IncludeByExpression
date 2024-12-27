@@ -13,9 +13,9 @@ jobs:
     name: coverage
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION  }}
     - name: Build
@@ -24,7 +24,7 @@ jobs:
       run: dotnet test --no-restore --framework net9.0
         /p:CollectCoverage=true 
         /p:CoverletOutputFormat=lcov 
-        /p:CoverletOutput=/home/runner/.dotnet/
+        /p:CoverletOutput=/home/runner/.dotnet/coverage.net9.0.info
     - name: Update coveralls data
       uses: coverallsapp/github-action@master
       with:
