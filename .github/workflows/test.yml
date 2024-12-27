@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-dotnet-action
+      - uses: ./.github/actions/setup-dotnet
 
       - name: Build
         run: dotnet build ./EFCore.IncludeByExpression --configuration Debug
