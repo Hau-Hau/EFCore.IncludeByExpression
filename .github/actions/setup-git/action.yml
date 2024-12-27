@@ -25,6 +25,11 @@ runs:
               git reset --hard origin/${{ inputs.hard-reset }}
             fi
           else
-            git checkout -b $TARGET_BRANCH_NAME
+            if [[ "${{ inputs.hard-reset }}" != "" ]]; then
+              git fetch origin ${{ inputs.hard-reset }}:${{ inputs.hard-reset }}
+              git checkout --no-track -b $TARGET_BRANCH_NAME refs/heads/${{ inputs.hard-reset }}
+            else
+              git checkout -b $TARGET_BRANCH_NAME
+            fi
           fi
 
