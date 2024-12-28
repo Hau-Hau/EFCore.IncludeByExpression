@@ -239,7 +239,9 @@ jobs:
               $additionalEntry = @(
                   "  - package-ecosystem: nuget",
                   "    target-branch: release/EFCore.IncludeByExpression/$dotnetVersion",
-                  "    directory: `"/EFCore.IncludeByExpression/`"",
+                  "    directories:",
+                  "      - `"/EFCore.IncludeByExpression/`"",
+                  "      - `"/EFCore.IncludeByExpression.Tests/`"",
                   "    schedule:",
                   "      interval: daily"
               )
