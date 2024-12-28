@@ -21,6 +21,11 @@ jobs:
     outputs:
       module: ${{ steps.validate.outputs.result }}
     steps:
+      - name: Print inputs
+        run: |
+          echo "dotnet: ${{ inputs.dotnet }}"
+          echo "dry-run: ${{ inputs.dry-run }}"
+    
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/setup-git
@@ -46,7 +51,9 @@ jobs:
           fi
 
           version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          echo "Current version: $version"
           version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
+          echo "Prev version: $version_of_last_release"
           if [[ "$version" == "$version_of_last_release" ]]; then
             echo "Version in EFCore.IncludeByExpression.csproj is same as version of last release. Please update the csproj file before proceeding with the release."
             echo "result=false" >> $GITHUB_OUTPUT
