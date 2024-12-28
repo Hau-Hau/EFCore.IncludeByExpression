@@ -16,16 +16,10 @@ updates:
   - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/net9.0
     directory: "/",
-    # directories:
-    #   - "/EFCore.IncludeByExpression/"
-    #   - "/EFCore.IncludeByExpression.Tests/"
     schedule:
       interval: daily
   - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/net8.0
     directory: "/",
-    # directories:
-    #   - "/EFCore.IncludeByExpression/"
-    #   - "/EFCore.IncludeByExpression.Tests/"
     schedule:
       interval: daily
