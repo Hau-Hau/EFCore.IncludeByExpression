@@ -15,11 +15,11 @@ updates:
       interval: daily
   - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/net9.0
-    directory: "/",
+    directory: "/"
     schedule:
       interval: daily
   - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/net8.0
-    directory: "/",
+    directory: "/"
     schedule:
       interval: daily
