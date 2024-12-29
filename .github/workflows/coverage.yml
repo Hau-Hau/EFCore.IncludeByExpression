@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main ]
 env:
-  DOTNET_VERSION: 9.0.x
+  DOTNET_VERSION: 8.0.x
   # https://github.com/coverlet-coverage/coverlet/issues/1391
   CollectCoverage: true
   CoverletOutputFormat: lcov
@@ -21,13 +21,13 @@ jobs:
     - name: Build
       run: dotnet build ./EFCore.IncludeByExpression.sln --configuration Release
     - name: Collect coverage
-      run: dotnet test --no-restore --framework net9.0
+      run: dotnet test --no-restore --framework net8.0
         /p:CollectCoverage=true 
         /p:CoverletOutputFormat=lcov 
-        /p:CoverletOutput=/home/runner/.dotnet/coverage.net9.0.info
+        /p:CoverletOutput=/home/runner/.dotnet/coverage.net8.0.info
     - name: Update coveralls data
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }} 
-        path-to-lcov: /home/runner/.dotnet/coverage.net9.0.info
+        path-to-lcov: /home/runner/.dotnet/coverage.net8.0.info
 
