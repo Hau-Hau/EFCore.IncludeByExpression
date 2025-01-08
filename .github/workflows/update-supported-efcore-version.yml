@@ -37,7 +37,7 @@ jobs:
         id: active-entityframeworkcore-versions
         shell: pwsh
         run: |
-          $versionString = "${{ steps.active-dotnet-version }}"
+          $versionString = "${{ steps.active-dotnet-version.outputs.value }}"
           $majorVersions = $versionString -split ',' | ForEach-Object { ($_ -replace '.\d+$', '') }
           $efCoreVersions = (Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore/index.json" -UseBasicParsing | ConvertFrom-Json).versions
 
