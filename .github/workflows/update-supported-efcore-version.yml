@@ -43,14 +43,13 @@ jobs:
 
           $activeEfCoreVersions = @()
           foreach ($majorDotnetVersion in $majorVersions) {
-            $efCoreVersion = $efCoreVersions | Where-Object { $_.StartsWith($majorDotnetVersion) -and $_ -match "^\d+.\d+.\d+$" } | Select-Object -Last 1
-            if ([string]::IsNullOrWhitespace($activeVersions)) {
+            $efCoreVersion = $efCoreVersions | Where-Object { $_.StartsWith(($majorDotnetVersion -replace 'net', '')) -and $_ -match "^\d+.\d+.\d+$" } | Select-Object -Last 1
+            if ([string]::IsNullOrWhitespace($efCoreVersion)) {
               continue
             }
 
             $activeEfCoreVersions = $activeEfCoreVersions + @($efCoreVersion)
-          }
-
+           }
           "value=$($activeEfCoreVersions -join ",")" >> $env:GITHUB_OUTPUT
       - name: Get highest supported dotnet version
         id: highest-dotnet-version
