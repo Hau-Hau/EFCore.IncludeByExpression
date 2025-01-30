@@ -120,11 +120,11 @@ jobs:
       - uses: ./.github/actions/update-dotnet-version
         with:
           project: ${{ steps.set-project-name.outputs.value }}
-          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version }}
       - uses: ./.github/actions/update-dotnet-version
         with:
           project: ${{ steps.set-project-name.outputs.value }}.Tests
-          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version }}
       - name: Update Microsoft.EntityFrameworkCore version in ${{ steps.set-project-name.outputs.value }}
         shell: pwsh
         run: |
@@ -228,7 +228,7 @@ jobs:
       - name: Update setup-dotnet/action.yml action
         shell: pwsh
         run: |
-          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $efCoreVersions = @($efCoreVersionsString -split ',')
           
           $dotnetVersions = @()
@@ -273,7 +273,7 @@ jobs:
         shell: pwsh
         run: |
           $filePath = "./.github/workflows/coverage.yml"
-          $highestDotNetVersion = "${{ needs.init.outputs.highest-dotnet-version.value }}"
+          $highestDotNetVersion = "${{ needs.init.outputs.highest-dotnet-version }}"
           $content = Get-Content -Path $filePath -Raw
           $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $($highestDotNetVersion).x"
           $content = $content -replace '--framework net\d+\.\d+', "--framework $highestDotNetVersion"
