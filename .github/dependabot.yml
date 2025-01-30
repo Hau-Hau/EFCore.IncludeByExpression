@@ -15,7 +15,9 @@ updates:
       interval: daily
   - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/9.0.x
-    directory: "/"
+    directories:
+      - "/EFCore.IncludeByExpression/"
+      - "/EFCore.IncludeByExpression.Tests/"
     schedule:
       interval: daily
     ignore:
@@ -29,7 +31,9 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/8.0.x
-    directory: "/"
+    directories:
+      - "/EFCore.IncludeByExpression/"
+      - "/EFCore.IncludeByExpression.Tests/"
     schedule:
       interval: daily
     ignore:
@@ -41,4 +45,3 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: Microsoft.EntityFrameworkCore.Relational
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-

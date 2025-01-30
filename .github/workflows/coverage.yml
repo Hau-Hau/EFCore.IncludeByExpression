@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main ]
 env:
-  DOTNET_VERSION: 8.0.x
+  DOTNET_VERSION: net8.0.x
   # https://github.com/coverlet-coverage/coverlet/issues/1391
   CollectCoverage: true
   CoverletOutputFormat: lcov
