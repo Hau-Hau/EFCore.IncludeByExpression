@@ -130,7 +130,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}/${{ steps.set-project-name.outputs.value }}.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -139,7 +139,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}.Tests/${{ steps.set-project-name.outputs.value }}.Tests.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -148,7 +148,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}.Tests/${{ steps.set-project-name.outputs.value }}.Tests.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
