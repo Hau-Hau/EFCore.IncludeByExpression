@@ -168,8 +168,8 @@ jobs:
           $csprojXml = [xml](Get-Content $filePath)
           $packageName = "Microsoft.EntityFrameworkCore.InMemory"
           $highestPackageVersion = "$((Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/$($packageName.ToLower())/index.json" -UseBasicParsing | ConvertFrom-Json).versions | Where-Object { $_ -match "^\d+.\d+.\d+$" } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
-          ($xml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
-          $xml.Save($filePath)
+          ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
+          $csprojXml.Save($filePath)
       - name: Update Microsoft.EntityFrameworkCore.Relational version in ${{ steps.set-project-name.outputs.value }}.Tests
         shell: pwsh
         run: |
@@ -177,8 +177,8 @@ jobs:
           $csprojXml = [xml](Get-Content $filePath)
           $packageName = "Microsoft.EntityFrameworkCore.Relational"
           $highestPackageVersion = "$((Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/$($packageName.ToLower())/index.json" -UseBasicParsing | ConvertFrom-Json).versions | Where-Object { $_ -match "^\d+.\d+.\d+$" } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
-          ($xml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
-          $xml.Save($filePath)
+          ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
+          $csprojXml.Save($filePath)
       - uses: ./.github/actions/commit-changes
         with:
           message: Update .NET version in ${{ steps.set-project-name.outputs.value }}
@@ -370,7 +370,7 @@ jobs:
   collect:
     needs: [
       status-tracker-lib,
-      status-tracker-pipelines,
+      status-tracker-pipelines
     ]
     if: always() && contains(needs.*.outputs.completed, 'true') 
     runs-on: ubuntu-latest
