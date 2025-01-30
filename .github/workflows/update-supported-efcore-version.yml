@@ -284,7 +284,7 @@ jobs:
         run: |
           $filePath = "./.github/workflows/update-version-lib.yml"
           $libVersions = @("${{ needs.init.outputs.active-entityframeworkcore-versions }}" -split ',') | ForEach-Object { ($_ -replace '\d+$', 'x') }
-          $newOptions = @($libVersions | ForEach-Object { 'release/EFCore.IncludeByExpression/$($_)') })
+          $newOptions = @($libVersions | ForEach-Object { "release/EFCore.IncludeByExpression/$($_)" })
           $yamlContent = Get-Content $filePath -Raw
            
           $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
