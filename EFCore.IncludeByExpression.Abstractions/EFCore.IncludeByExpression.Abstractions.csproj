@@ -15,7 +15,7 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression.Abstractions</PackageId>
-		<PackageVersion>1.0.6</PackageVersion>
+		<PackageVersion>1.0.7</PackageVersion>
 		<Description>Abstractions for EFCore.IncludeByExpression package.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
@@ -39,4 +39,5 @@
 	</ItemGroup>
 
 </Project>
+
 
