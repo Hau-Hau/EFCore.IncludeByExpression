@@ -41,4 +41,3 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: Microsoft.EntityFrameworkCore.Relational
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-
