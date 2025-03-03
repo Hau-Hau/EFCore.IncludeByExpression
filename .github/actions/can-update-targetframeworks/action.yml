@@ -49,4 +49,5 @@ runs:
 
         $currentVersion = [decimal]@($projectTargetFramework -replace "^net")[0]
         $numericVersions = $TargetDotnetVersions -replace "^net" | ForEach-Object { [decimal]$_ }
-        "result=$("$(-not($numericVersions.Contains($currentVersion)))".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+        $highestNumericVersion = $numericVersions | Sort-Object -Descending | Select-Object -First 1
+        "result=$("$($currentVersion -lt $highestNumericVersion)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
