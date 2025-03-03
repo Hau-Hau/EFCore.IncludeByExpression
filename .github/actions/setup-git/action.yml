@@ -31,13 +31,14 @@ runs:
               git reset --hard origin/${{ inputs.hard-reset }}
             fi
           else
-            echo "#1"
             if [[ "${{ inputs.hard-reset }}" != "" ]]; then
               git fetch origin ${{ inputs.hard-reset }}
-              echo "#2"
-              git checkout --no-track -b $TARGET_BRANCH_NAME refs/heads/${{ inputs.hard-reset }}
+              if git show-ref --verify --quiet refs/heads/${{ inputs.hard-reset }}; then
+                git checkout --no-track -b $TARGET_BRANCH_NAME refs/heads/${{ inputs.hard-reset }}
+              elif git show-ref --verify --quiet refs/remotes/origin/${{ inputs.hard-reset }}; then
+                git checkout --no-track -b $TARGET_BRANCH_NAME origin/${{ inputs.hard-reset }}
+              fi
             else
-              echo "#3"
               git checkout -b $TARGET_BRANCH_NAME
             fi
           fi
