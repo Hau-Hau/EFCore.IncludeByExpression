@@ -108,6 +108,9 @@ jobs:
       branch: ${{ steps.set-branch-name.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Set project name
         id: set-project-name
         run: |
