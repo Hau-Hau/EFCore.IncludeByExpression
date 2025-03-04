@@ -16,7 +16,7 @@
 
 	<PropertyGroup>
 		<PackageId>EFCore.IncludeByExpression</PackageId>
-		<PackageVersion>8.0.1</PackageVersion>
+		<PackageVersion>8.0.2</PackageVersion>
 		<Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
 		<RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
 		<RespositoryType>git</RespositoryType>
@@ -38,4 +38,5 @@
 	</ItemGroup>
 
 </Project>
+
 
