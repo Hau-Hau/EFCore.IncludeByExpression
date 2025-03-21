@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0</TargetFrameworks>
@@ -35,7 +35,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.1" />
 	</ItemGroup>
 
 </Project>
