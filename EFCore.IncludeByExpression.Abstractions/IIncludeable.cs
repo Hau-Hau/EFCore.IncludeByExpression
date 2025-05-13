@@ -38,7 +38,7 @@ namespace EFCore.IncludeByExpression.Abstractions
             where TEntity : class
         {
             IncludableServiceProxy.Include<TEntity, TProperty>(source, navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
+            return (IThenIncludable<TEntity, TProperty>)source;
         }
     }
 }

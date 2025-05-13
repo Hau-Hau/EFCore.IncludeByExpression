@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace EFCore.IncludeByExpression.Abstractions
 {
@@ -38,7 +37,7 @@ namespace EFCore.IncludeByExpression.Abstractions
             where TEntity : class
         {
             IncludableServiceProxy.ThenIncludeReference(source, navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
+            return (IThenIncludable<TEntity, TProperty>)source;
         }
 
         /// <summary>
@@ -60,7 +59,7 @@ namespace EFCore.IncludeByExpression.Abstractions
             where TEntity : class
         {
             IncludableServiceProxy.ThenIncludeEnumerable(source, navigationPropertyPath);
-            return Unsafe.As<IThenIncludable<TEntity, TProperty>>(source);
+            return (IThenIncludable<TEntity, TProperty>)source;
         }
     }
 }
