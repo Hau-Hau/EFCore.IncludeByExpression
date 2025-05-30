@@ -12,15 +12,15 @@ on:
         required: true
         type: choice
         options:
-          - release/EFCore.IncludeByExpression/net9.0
-          - release/EFCore.IncludeByExpression/net8.0
+          - release/EFCore.IncludeByExpression/9.0.x
+          - release/EFCore.IncludeByExpression/8.0.x
   # Do not edit. Section is edited by pipeline.
   pull_request:
     types: 
       - closed
     branches:
-      - release/EFCore.IncludeByExpression/net9.0
-      - release/EFCore.IncludeByExpression/net8.0
+      - release/EFCore.IncludeByExpression/9.0.x
+      - release/EFCore.IncludeByExpression/8.0.x
 
 concurrency:
   group: update-lib-version-${{ inputs.branch || github.base_ref }}
@@ -155,7 +155,7 @@ jobs:
       - uses: ./.github/actions/put-pull-request
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          title: Update ${{ steps.set-project-name.outputs.value }}.csproj
+          title: Update ${{ steps.set-project-name.outputs.value }}.csproj (${{ inputs.branch || github.base_ref}})
           body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.csproj file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
           from: ${{ steps.set-branch-name.outputs.value }}
           into: ${{ inputs.branch || github.base_ref}}
