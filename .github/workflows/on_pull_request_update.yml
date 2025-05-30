@@ -1,0 +1,113 @@
+name: On pull request update
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  init:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      check-id: ${{ steps.create-check.outputs.check-id }}
+    steps:
+      - name: Create unique check run
+        id: create-check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checkName = `PR-Validation`;
+            const uniqueExternalId = `${context.payload.pull_request.number}-${context.payload.pull_request.base.ref}-${context.payload.pull_request.head.sha}-${Date.now()}`;
+            
+            const check = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: checkName,
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'in_progress',
+              external_id: uniqueExternalId,
+              details_url: `${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              output: {
+                title: `Running tests for PR #${context.payload.pull_request.number} → ${context.payload.pull_request.base.ref}`,
+                summary: 'Tests are currently running...'
+              }
+            });
+            
+            core.setOutput('check-id', check.data.id);
+            console.log(`Created check run ${check.data.id} with name: ${checkName}`);
+
+  test:
+    needs: init
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Is it needed?
+      # - name: Merge latest target branch
+      #   if: github.event_name == 'pull_request'
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+      #     TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+      #     SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+          
+      #     git fetch origin $TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH
+      #     git fetch origin $SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH
+          
+      #     git checkout -b test-merge origin/$TARGET_BRANCH
+          
+      #     if git merge --no-ff --no-edit origin/$SOURCE_BRANCH; then
+      #       echo "✅ Testing merged state: $(git rev-parse HEAD)"
+      #     else
+      #       echo "❌ Merge conflicts - build failed"
+      #       exit 1
+      #     fi
+      
+      - uses: ./.github/actions/setup-dotnet
+      - name: Build
+        run: dotnet build . --configuration Debug
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal
+
+  finalise:
+    if: github.event_name == 'pull_request'
+    needs: [init, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update check run
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the test results from the previous step
+            const testOutcome = '${{ needs.test.result }}';
+            const conclusion = testOutcome === 'success' ? 'success' : 'failure';
+            const summary = testOutcome === 'success' ? 
+              'All tests passed successfully' : 
+              'Some tests failed';
+            
+            console.log(`Test outcome: ${testOutcome}, Conclusion: ${conclusion}`);
+            
+            try {
+              await github.rest.checks.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                check_run_id: ${{ needs.init.outputs.check-id }},
+                status: 'completed',
+                conclusion: conclusion,
+                completed_at: new Date().toISOString(),
+                output: {
+                  title: `Test results for PR #${{ github.event.pull_request.number }} → ${{ github.event.pull_request.base.ref }}`,
+                  summary: summary
+                }
+              });
+              
+              console.log(`Successfully updated check run ${{ needs.init.outputs.check-id }} with conclusion: ${conclusion}`);
+            } catch (error) {
+              console.error('Error updating check run:', error);
+              core.setFailed(`Failed to update check run: ${error.message}`);
+            }
