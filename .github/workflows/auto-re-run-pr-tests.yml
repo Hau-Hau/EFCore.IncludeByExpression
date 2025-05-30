@@ -1,0 +1,52 @@
+name: Auto Re-run PR Tests
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+      - 'release/**/**'
+      - release/EFCore.IncludeByExpression/9.0.x
+
+jobs:
+  rerun-pr-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get open PRs and re-run workflows
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          Write-Host "Getting PRs for branch: $env:TARGET_BRANCH"
+          try {
+            $prs = $(gh pr list --base $env:TARGET_BRANCH --state open --json number,title | ConvertFrom-Json)
+            Write-Host "Found $($prs.Count) open PRs"
+            
+            if ($prs.Count -eq 0) {
+              Write-Host "No open PRs found for branch $env:TARGET_BRANCH"
+              exit 0
+            }
+            
+            foreach ($pr in $prs) {
+              Write-Host "Processing PR #$($pr.number): $($pr.title)"
+              try {
+                $runs = $(gh run list --workflow=test.yml --branch="pr-$($pr.number)" --json databaseId,status,conclusion,createdAt | ConvertFrom-Json)
+                if ($runs.Count -eq 0) {
+                  Write-Host "⚠️  No workflow runs found for PR #$($pr.number)"
+                  continue
+                }
+                
+                $latestRun = $runs | Sort-Object createdAt -Descending | Select-Object -First 1
+                gh run rerun $latestRun.databaseId
+                Write-Host "✅ Re-ran workflow for PR #$($pr.number)"
+              } catch {
+                Write-Host "❌ Failed to re-run workflow for PR #$($pr.number): $($_.Exception.Message)"
+              }
+            }
+          } catch {
+            Write-Host "❌ Error: $($_.Exception.Message)"
+            exit 1
+          }
