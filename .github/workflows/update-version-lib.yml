@@ -155,7 +155,7 @@ jobs:
       - uses: ./.github/actions/put-pull-request
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          title: Update ${{ steps.set-project-name.outputs.value }}.csproj
+          title: Update ${{ steps.set-project-name.outputs.value }}.csproj (${{ inputs.branch || github.base_ref}})
           body: This PR updates the  ${{ steps.set-project-name.outputs.value }}.csproj file to ensure correct project dependencies, metadata, or versioning. Please review the changes for accuracy and compliance.
           from: ${{ steps.set-branch-name.outputs.value }}
           into: ${{ inputs.branch || github.base_ref}}

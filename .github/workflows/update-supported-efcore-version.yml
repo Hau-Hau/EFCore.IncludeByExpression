@@ -37,20 +37,19 @@ jobs:
         id: active-entityframeworkcore-versions
         shell: pwsh
         run: |
-          $versionString = "${{ steps.active-dotnet-version }}"
+          $versionString = "${{ steps.active-dotnet-version.outputs.value }}"
           $majorVersions = $versionString -split ',' | ForEach-Object { ($_ -replace '.\d+$', '') }
           $efCoreVersions = (Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore/index.json" -UseBasicParsing | ConvertFrom-Json).versions
 
           $activeEfCoreVersions = @()
           foreach ($majorDotnetVersion in $majorVersions) {
-            $efCoreVersion = $efCoreVersions | Where-Object { $_.StartsWith($majorDotnetVersion) -and $_ -match "^\d+.\d+.\d+$" } | Select-Object -Last 1
-            if ([string]::IsNullOrWhitespace($activeVersions)) {
+            $efCoreVersion = $efCoreVersions | Where-Object { $_.StartsWith(($majorDotnetVersion -replace 'net', '')) -and $_ -match "^\d+.\d+.\d+$" } | Select-Object -Last 1
+            if ([string]::IsNullOrWhitespace($efCoreVersion)) {
               continue
             }
 
             $activeEfCoreVersions = $activeEfCoreVersions + @($efCoreVersion)
-          }
-
+           }
           "value=$($activeEfCoreVersions -join ",")" >> $env:GITHUB_OUTPUT
       - name: Get highest supported dotnet version
         id: highest-dotnet-version
@@ -121,17 +120,17 @@ jobs:
       - uses: ./.github/actions/update-dotnet-version
         with:
           project: ${{ steps.set-project-name.outputs.value }}
-          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version }}
       - uses: ./.github/actions/update-dotnet-version
         with:
           project: ${{ steps.set-project-name.outputs.value }}.Tests
-          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version }}
       - name: Update Microsoft.EntityFrameworkCore version in ${{ steps.set-project-name.outputs.value }}
         shell: pwsh
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}/${{ steps.set-project-name.outputs.value }}.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -140,7 +139,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}.Tests/${{ steps.set-project-name.outputs.value }}.Tests.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -149,7 +148,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}.Tests/${{ steps.set-project-name.outputs.value }}.Tests.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -169,8 +168,8 @@ jobs:
           $csprojXml = [xml](Get-Content $filePath)
           $packageName = "Microsoft.EntityFrameworkCore.InMemory"
           $highestPackageVersion = "$((Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/$($packageName.ToLower())/index.json" -UseBasicParsing | ConvertFrom-Json).versions | Where-Object { $_ -match "^\d+.\d+.\d+$" } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
-          ($xml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
-          $xml.Save($filePath)
+          ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
+          $csprojXml.Save($filePath)
       - name: Update Microsoft.EntityFrameworkCore.Relational version in ${{ steps.set-project-name.outputs.value }}.Tests
         shell: pwsh
         run: |
@@ -178,8 +177,8 @@ jobs:
           $csprojXml = [xml](Get-Content $filePath)
           $packageName = "Microsoft.EntityFrameworkCore.Relational"
           $highestPackageVersion = "$((Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/$($packageName.ToLower())/index.json" -UseBasicParsing | ConvertFrom-Json).versions | Where-Object { $_ -match "^\d+.\d+.\d+$" } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
-          ($xml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
-          $xml.Save($filePath)
+          ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
+          $csprojXml.Save($filePath)
       - uses: ./.github/actions/commit-changes
         with:
           message: Update .NET version in ${{ steps.set-project-name.outputs.value }}
@@ -229,7 +228,7 @@ jobs:
       - name: Update setup-dotnet/action.yml action
         shell: pwsh
         run: |
-          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $efCoreVersions = @($efCoreVersionsString -split ',')
           
           $dotnetVersions = @()
@@ -274,9 +273,9 @@ jobs:
         shell: pwsh
         run: |
           $filePath = "./.github/workflows/coverage.yml"
-          $highestDotNetVersion = "${{ needs.init.outputs.highest-dotnet-version.value }}"
+          $highestDotNetVersion = "${{ needs.init.outputs.highest-dotnet-version }}"
           $content = Get-Content -Path $filePath -Raw
-          $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $($highestDotNetVersion).x"
+          $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $($highestDotNetVersion -replace 'net', '').x"
           $content = $content -replace '--framework net\d+\.\d+', "--framework $highestDotNetVersion"
           $content = $content -replace 'coverage\.net\d+\.\d+\.info', "coverage.$highestDotNetVersion.info"
           $content | Set-Content -Path $filePath -NoNewline
@@ -285,7 +284,7 @@ jobs:
         run: |
           $filePath = "./.github/workflows/update-version-lib.yml"
           $libVersions = @("${{ needs.init.outputs.active-entityframeworkcore-versions }}" -split ',') | ForEach-Object { ($_ -replace '\d+$', 'x') }
-          $newOptions = @($libVersions | ForEach-Object { 'release/EFCore.IncludeByExpression/$($_)') })
+          $newOptions = @($libVersions | ForEach-Object { "release/EFCore.IncludeByExpression/$($_)" })
           $yamlContent = Get-Content $filePath -Raw
            
           $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
@@ -327,9 +326,7 @@ jobs:
               $additionalEntry = @(
                   "  - package-ecosystem: nuget",
                   "    target-branch: release/EFCore.IncludeByExpression/$libVersion",
-                  "    directories:",
-                  "      - `"/EFCore.IncludeByExpression/`"",
-                  "      - `"/EFCore.IncludeByExpression.Tests/`"",
+                  "    directory: `"/`"",
                   "    schedule:",
                   "      interval: daily"
                   "    ignore:"
@@ -371,7 +368,7 @@ jobs:
   collect:
     needs: [
       status-tracker-lib,
-      status-tracker-pipelines,
+      status-tracker-pipelines
     ]
     if: always() && contains(needs.*.outputs.completed, 'true') 
     runs-on: ubuntu-latest
