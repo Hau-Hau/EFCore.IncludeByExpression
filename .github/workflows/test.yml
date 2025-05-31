@@ -1,41 +1,48 @@
-name: Test
+name: Isolated Tests
+
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - 'release/**'
-      - 'release/*/**'
-  merge_group:
+    types: [opened, synchronize, reopened]
+
 jobs:
-  test:
-    name: ${{ github.event.pull_request.number && format('Test PR-{0}', github.event.pull_request.number) || format('Test {0}', github.ref_name) }}-${{ github.event.pull_request.head.sha || github.sha }}
+  create-check:
+    runs-on: ubuntu-latest
+    outputs:
+      check-id: ${{ steps.create-check.outputs.check-id }}
+    steps:
+      - name: Create unique check run
+        id: create-check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checkName = `Test-${context.payload.pull_request.base.ref}-PR${context.payload.pull_request.number}`;
+            const uniqueExternalId = `${context.payload.pull_request.number}-${context.payload.pull_request.base.ref}-${context.payload.pull_request.head.sha}-${Date.now()}`;
+            
+            const check = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: checkName,
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'in_progress',
+              external_id: uniqueExternalId,
+              details_url: `${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              output: {
+                title: `Running tests for PR #${context.payload.pull_request.number} → ${context.payload.pull_request.base.ref}`,
+                summary: 'Tests are currently running...'
+              }
+            });
+            
+            core.setOutput('check-id', check.data.id);
+            console.log(`Created check run ${check.data.id} with name: ${checkName}`);
+
+  run-tests:
+    needs: create-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          clean: true
-
-      - name: Set run context
-        id: context
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "run_type=PR" >> $GITHUB_OUTPUT
-            echo "identifier=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-            echo "branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-            echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
-            echo "base_sha=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
-            echo "Testing GitHub's PR merge commit (HEAD: ${{ github.event.pull_request.head.sha }} into BASE: ${{ github.event.pull_request.base.sha }})"
-            echo "Actual commit being tested by checkout: ${{ github.sha }}" # For PRs, this is the SHA of 'refs/pull/N/merge'
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "run_type=Manual" >> $GITHUB_OUTPUT
-          else # Push or merge_group
-            echo "run_type=Push" >> $GITHUB_OUTPUT
-            echo "Testing commit: ${{ github.sha }}"
-          fi
+          ref: ${{ github.event.pull_request.head.sha }}
       
       # - name: Merge latest target branch
       #   if: github.event_name == 'pull_request'
@@ -63,3 +70,25 @@ jobs:
         run: dotnet build . --configuration Debug
       - name: Test
         run: dotnet test --no-restore --verbosity normal
+
+      - name: Update check run
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const conclusion = '${{ steps.tests.outputs.test-result }}';
+            const summary = '${{ steps.tests.outputs.test-summary }}';
+            
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ needs.create-check.outputs.check-id }},
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: `Test results for PR #${{ github.event.pull_request.number }} → ${{ github.event.pull_request.base.ref }}`,
+                summary: summary
+              }
+            });
+            
+            console.log(`Updated check run ${{ needs.create-check.outputs.check-id }} with conclusion: ${conclusion}`);
