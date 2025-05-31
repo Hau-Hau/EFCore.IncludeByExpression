@@ -96,7 +96,7 @@ jobs:
               await github.rest.checks.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                check_run_id: ${{ needs.create-check.outputs.check-id }},
+                check_run_id: ${{ needs.initialize.outputs.check-id }},
                 status: 'completed',
                 conclusion: conclusion,
                 output: {
@@ -105,7 +105,7 @@ jobs:
                 }
               });
               
-              console.log(`Successfully updated check run ${{ needs.create-check.outputs.check-id }} with conclusion: ${conclusion}`);
+              console.log(`Successfully updated check run ${{ needs.initialize.outputs.check-id }} with conclusion: ${conclusion}`);
             } catch (error) {
               console.error('Error updating check run:', error);
               core.setFailed(`Failed to update check run: ${error.message}`);
