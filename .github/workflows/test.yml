@@ -76,19 +76,30 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const conclusion = '${{ steps.tests.outputs.test-result }}';
-            const summary = '${{ steps.tests.outputs.test-summary }}';
+            // Get the test results from the previous step
+            const testOutcome = '${{ steps.tests.outcome }}';
+            const conclusion = testOutcome === 'success' ? 'success' : 'failure';
+            const summary = testOutcome === 'success' ? 
+              'All tests passed successfully' : 
+              'Some tests failed';
             
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ needs.create-check.outputs.check-id }},
-              status: 'completed',
-              conclusion: conclusion,
-              output: {
-                title: `Test results for PR #${{ github.event.pull_request.number }} → ${{ github.event.pull_request.base.ref }}`,
-                summary: summary
-              }
-            });
+            console.log(`Test outcome: ${testOutcome}, Conclusion: ${conclusion}`);
             
-            console.log(`Updated check run ${{ needs.create-check.outputs.check-id }} with conclusion: ${conclusion}`);
+            try {
+              await github.rest.checks.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                check_run_id: ${{ needs.create-check.outputs.check-id }},
+                status: 'completed',
+                conclusion: conclusion,
+                output: {
+                  title: `Test results for PR #${{ github.event.pull_request.number }} → ${{ github.event.pull_request.base.ref }}`,
+                  summary: summary
+                }
+              });
+              
+              console.log(`Successfully updated check run ${{ needs.create-check.outputs.check-id }} with conclusion: ${conclusion}`);
+            } catch (error) {
+              console.error('Error updating check run:', error);
+              core.setFailed(`Failed to update check run: ${error.message}`);
+            }
