@@ -5,8 +5,6 @@ on:
       - main
       - 'release/**'
       - 'release/**/**'
-      - release/EFCore.IncludeByExpression/9.0.x
-
 jobs:
   rerun-pr-tests:
     runs-on: ubuntu-latest
@@ -14,39 +12,259 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get open PRs and re-run workflows
+      - name: re-run workflows
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_BRANCH: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          Write-Host "Getting PRs for branch: $env:TARGET_BRANCH"
+          Write-Host "🔎 Getting PRs targeting branch: $env:TARGET_BRANCH"
+          Write-Host "Repository: $env:GITHUB_REPOSITORY"
+          
+          # Function to make GitHub API calls with proper error handling
+          function Invoke-GitHubApi {
+            param(
+              [string]$Uri,
+              [string]$Method = "GET"
+            )
+            try {
+              $headers = @{
+                "Authorization" = "token $env:GH_TOKEN"
+                "Accept" = "application/vnd.github.v3+json"
+                "User-Agent" = "GitHub-Actions-Rerun-Script"
+              }
+              return Invoke-RestMethod -Uri $Uri -Headers $headers -Method $Method
+            } catch {
+              Write-Host "❌ API call failed for $Uri : $($_.Exception.Message)"
+              throw
+            }
+          }
+          
           try {
-            $prs = $(gh pr list --base $env:TARGET_BRANCH --state open --json number,title | ConvertFrom-Json)
-            Write-Host "Found $($prs.Count) open PRs"
+            # Get all open PRs targeting the branch using GitHub API
+            $prsUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/pulls?state=open&base=$env:TARGET_BRANCH&per_page=100"
+            $prs = Invoke-GitHubApi -Uri $prsUri
             
-            if ($prs.Count -eq 0) {
-              Write-Host "No open PRs found for branch $env:TARGET_BRANCH"
+            if (-not $prs -or $prs.Count -eq 0) {
+              Write-Host "No open PRs targeting $env:TARGET_BRANCH"
               exit 0
             }
             
+            Write-Host "Found $($prs.Count) open PR(s) targeting $env:TARGET_BRANCH"
+            
+            # Get all workflow IDs for test workflows in the repository
+            Write-Host "`n🔍 Getting workflow IDs for test workflows..."
+            $workflowsUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/actions/workflows"
+            $workflows = Invoke-GitHubApi -Uri $workflowsUri
+            
+            # Find test workflow(s) - looking for common test workflow names
+            $testWorkflows = $workflows.workflows | Where-Object { 
+              $_.name -match "test" -or 
+              $_.path -match "test\.yml$" -or 
+              $_.path -match "test\.yaml$" -or
+              $_.path -match "ci\.yml$" -or
+              $_.path -match "ci\.yaml$"
+            }
+            
+            if (-not $testWorkflows -or $testWorkflows.Count -eq 0) {
+              Write-Host "❌ No test workflows found. Looking for workflows with these patterns: test.yml, test.yaml, ci.yml, ci.yaml"
+              $workflows.workflows | ForEach-Object { Write-Host "   Available: $($_.name) ($($_.path))" }
+              exit 1
+            }
+            
+            Write-Host "Found $($testWorkflows.Count) test workflow(s):"
+            $testWorkflows | ForEach-Object { Write-Host "   - $($_.name) (ID: $($_.id), Path: $($_.path))" }
+            
             foreach ($pr in $prs) {
-              Write-Host "Processing PR #$($pr.number): $($pr.title)"
+              $prNumber = $pr.number
+              $headSha = $pr.head.sha
+              $headRef = $pr.head.ref
+              $headRepoFullName = $pr.head.repo.full_name
+              $baseRepoFullName = $pr.base.repo.full_name
+              $prTitle = $pr.title
+              
+              Write-Host "`n" + "="*80
+              Write-Host "🔄 Processing PR #$prNumber"
+              Write-Host "   Title: $prTitle"
+              Write-Host "   Head Branch: $headRef"
+              Write-Host "   Head SHA: $headSha"
+              Write-Host "   Head Repo: $headRepoFullName"
+              Write-Host "   Is Fork: $($headRepoFullName -ne $baseRepoFullName)"
+              
               try {
-                $runs = $(gh run list --workflow=test.yml --branch="pr-$($pr.number)" --json databaseId,status,conclusion,createdAt | ConvertFrom-Json)
-                if ($runs.Count -eq 0) {
-                  Write-Host "⚠️  No workflow runs found for PR #$($pr.number)"
+                $allCandidateRuns = @()
+                
+                # Search through each test workflow for runs related to this PR
+                foreach ($workflow in $testWorkflows) {
+                  Write-Host "   🔍 Searching workflow: $($workflow.name) (ID: $($workflow.id))"
+                  
+                  # Method 1: Search by branch and workflow ID (most efficient)
+                  $branchRunsUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/actions/workflows/$($workflow.id)/runs?branch=$headRef&per_page=50"
+                  
+                  try {
+                    $branchRuns = Invoke-GitHubApi -Uri $branchRunsUri
+                    
+                    # Filter to exact SHA match
+                    $exactMatches = $branchRuns.workflow_runs | Where-Object { 
+                      $_.head_sha -eq $headSha -and
+                      $_.head_branch -eq $headRef
+                    }
+                    
+                    Write-Host "      Found $($exactMatches.Count) run(s) matching SHA and branch"
+                    $allCandidateRuns += $exactMatches
+                    
+                  } catch {
+                    Write-Host "      ⚠️ Branch search failed: $($_.Exception.Message)"
+                  }
+                  
+                  # Method 2: If no results from branch search, try SHA-based search (fallback)
+                  if ($exactMatches.Count -eq 0) {
+                    Write-Host "      🔍 Fallback: Searching recent runs for SHA match..."
+                    $recentRunsUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/actions/workflows/$($workflow.id)/runs?per_page=20"
+                    
+                    try {
+                      $recentRuns = Invoke-GitHubApi -Uri $recentRunsUri
+                      $shaMatches = $recentRuns.workflow_runs | Where-Object { 
+                        $_.head_sha -eq $headSha -and
+                        $_.head_branch -eq $headRef
+                      }
+                      
+                      Write-Host "      Found $($shaMatches.Count) run(s) in recent runs matching SHA"
+                      $allCandidateRuns += $shaMatches
+                      
+                    } catch {
+                      Write-Host "      ⚠️ Recent runs search failed: $($_.Exception.Message)"
+                    }
+                  }
+                }
+                
+                # Remove duplicates based on run ID
+                $uniqueRuns = $allCandidateRuns | Sort-Object id -Unique
+                Write-Host "   📊 Total unique candidate runs found: $($uniqueRuns.Count)"
+                
+                if ($uniqueRuns.Count -eq 0) {
+                  Write-Host "⚠️  No workflow runs found for PR #$prNumber"
+                  Write-Host "   This might be normal if:"
+                  Write-Host "   - The PR is very new and workflows haven't started yet"
+                  Write-Host "   - Workflows are disabled for this branch"
+                  Write-Host "   - The branch naming doesn't match workflow triggers"
                   continue
                 }
                 
-                $latestRun = $runs | Sort-Object createdAt -Descending | Select-Object -First 1
-                gh run rerun $latestRun.databaseId
-                Write-Host "✅ Re-ran workflow for PR #$($pr.number)"
+                # Additional verification for pull_request triggered runs
+                $verifiedRuns = @()
+                foreach ($run in $uniqueRuns) {
+                  Write-Host "   🔍 Verifying run $($run.id)..."
+                  Write-Host "      Event: $($run.event), Status: $($run.status), Conclusion: $($run.conclusion)"
+                  
+                  $isVerified = $false
+                  
+                  # For pull_request events, verify PR association
+                  if ($run.event -eq "pull_request" -or $run.event -eq "pull_request_target") {
+                    # Get detailed run info to check PR association
+                    try {
+                      $runDetailsUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/actions/runs/$($run.id)"
+                      $runDetails = Invoke-GitHubApi -Uri $runDetailsUri
+                      
+                      if ($runDetails.pull_requests -and $runDetails.pull_requests.Count -gt 0) {
+                        $associatedPR = $runDetails.pull_requests | Where-Object { $_.number -eq $prNumber }
+                        if ($associatedPR) {
+                          $isVerified = $true
+                          Write-Host "      ✅ Verified PR association"
+                        } else {
+                          Write-Host "      ⚠️ Run associated with different PR: $($runDetails.pull_requests[0].number)"
+                        }
+                      } else {
+                        Write-Host "      ⚠️ No PR association found in run details"
+                      }
+                    } catch {
+                      Write-Host "      ⚠️ Could not verify PR association: $($_.Exception.Message)"
+                      # If we can't verify, but SHA and branch match perfectly, accept it
+                      if ($run.head_sha -eq $headSha -and $run.head_branch -eq $headRef) {
+                        $isVerified = $true
+                        Write-Host "      ✅ Accepted based on SHA/branch match"
+                      }
+                    }
+                  } else {
+                    # For push events, SHA + branch match is sufficient
+                    if ($run.head_sha -eq $headSha -and $run.head_branch -eq $headRef) {
+                      $isVerified = $true
+                      Write-Host "      ✅ Verified for push event"
+                    }
+                  }
+                  
+                  if ($isVerified) {
+                    $verifiedRuns += $run
+                  }
+                }
+                
+                if ($verifiedRuns.Count -eq 0) {
+                  Write-Host "❌ No verified workflow runs found for PR #$prNumber"
+                  continue
+                }
+                
+                # Get the most recent verified run
+                $latestRun = $verifiedRuns | Sort-Object created_at -Descending | Select-Object -First 1
+                
+                Write-Host "   📊 Selected run for processing:"
+                Write-Host "      Run ID: $($latestRun.id)"
+                Write-Host "      Status: $($latestRun.status)"
+                Write-Host "      Conclusion: $($latestRun.conclusion)"
+                Write-Host "      Created: $($latestRun.created_at)"
+                Write-Host "      Event: $($latestRun.event)"
+                Write-Host "      Workflow: $($latestRun.name)"
+                
+                # Determine if we should re-run
+                $shouldRerun = $false
+                $reason = ""
+                
+                if ($latestRun.status -eq "completed") {
+                  if ($latestRun.conclusion -in @("failure", "cancelled", "timed_out", "action_required")) {
+                    $shouldRerun = $true
+                    $reason = "Workflow concluded with: $($latestRun.conclusion)"
+                  } elseif ($latestRun.conclusion -eq "success") {
+                    Write-Host "   ✅ Workflow already successful - skipping rerun"
+                  } elseif ($latestRun.conclusion -eq "skipped") {
+                    Write-Host "   ⏭️  Workflow was skipped - not rerunning"
+                  } else {
+                    $shouldRerun = $true
+                    $reason = "Unexpected conclusion: $($latestRun.conclusion)"
+                  }
+                } elseif ($latestRun.status -in @("queued", "in_progress", "waiting")) {
+                  Write-Host "   ⏳ Workflow currently $($latestRun.status) - skipping rerun"
+                } else {
+                  $shouldRerun = $true
+                  $reason = "Workflow in unexpected status: $($latestRun.status)"
+                }
+                
+                if ($shouldRerun) {
+                  Write-Host "   🔄 Re-running workflow..."
+                  Write-Host "      Reason: $reason"
+                  
+                  try {
+                    # Use gh CLI for reliability
+                    gh run rerun $latestRun.id
+                    Write-Host "   ✅ Successfully re-ran workflow $($latestRun.id) for PR #$prNumber"
+                    
+                    # Brief pause to avoid rate limiting
+                    Start-Sleep -Seconds 1
+                  } catch {
+                    Write-Host "   ❌ Failed to re-run workflow $($latestRun.id): $($_.Exception.Message)"
+                  }
+                } else {
+                  Write-Host "   ✋ No rerun needed for PR #$prNumber"
+                }
+                
               } catch {
-                Write-Host "❌ Failed to re-run workflow for PR #$($pr.number): $($_.Exception.Message)"
+                Write-Host "❌ Failed to process PR #$prNumber : $($_.Exception.Message)"
               }
             }
+            
+            Write-Host "`n" + "="*80
+            Write-Host "🏁 Completed processing all PRs targeting $env:TARGET_BRANCH"
+            
           } catch {
-            Write-Host "❌ Error: $($_.Exception.Message)"
+            Write-Host "❌ Critical failure: $($_.Exception.Message)"
             exit 1
           }
