@@ -9,12 +9,10 @@ on:
   merge_group:
 jobs:
   test:
-    name: ${{ github.event.pull_request.number && format('Test PR-{0}', github.event.pull_request.number) || format('Test {0}', github.ref_name) }}-${{ github.sha }}    
-    runs-on: ubuntu-latest
+    name: ${{ github.event.pull_request.number && format('Test PR-{0}', github.event.pull_request.number) || format('Test {0}', github.ref_name) }}-${{ github.event.pull_request.head.sha || github.sha }}    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha }}
           fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
           token: ${{ secrets.GITHUB_TOKEN }}
           clean: true
@@ -26,45 +24,38 @@ jobs:
             echo "run_type=PR" >> $GITHUB_OUTPUT
             echo "identifier=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
             echo "branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
             echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+            echo "base_sha=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+            echo "Testing GitHub's PR merge commit (HEAD: ${{ github.event.pull_request.head.sha }} into BASE: ${{ github.event.pull_request.base.sha }})"
+            echo "Actual commit being tested by checkout: ${{ github.sha }}" # For PRs, this is the SHA of 'refs/pull/N/merge'
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "run_type=Manual" >> $GITHUB_OUTPUT
-            echo "identifier=manual-$(date +%s)" >> $GITHUB_OUTPUT
-            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "base_branch=N/A" >> $GITHUB_OUTPUT
-          else
+          else # Push or merge_group
             echo "run_type=Push" >> $GITHUB_OUTPUT
-            echo "identifier=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "base_branch=N/A" >> $GITHUB_OUTPUT
+            echo "Testing commit: ${{ github.sha }}"
           fi
-          
-          echo "Run type: ${{ steps.context.outputs.run_type }}"
-          echo "Identifier: ${{ steps.context.outputs.identifier }}"
-          echo "Branch: ${{ steps.context.outputs.branch }}"
-          echo "Base branch: ${{ steps.context.outputs.base_branch }}"
-          echo "SHA: ${{ github.sha }}"
       
-      - name: Merge latest target branch
-        if: github.event_name == 'pull_request'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      # - name: Merge latest target branch
+      #   if: github.event_name == 'pull_request'
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
-          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+      #     TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+      #     SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
           
-          git fetch origin $TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH
-          git fetch origin $SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH
+      #     git fetch origin $TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH
+      #     git fetch origin $SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH
           
-          git checkout -b test-merge origin/$TARGET_BRANCH
+      #     git checkout -b test-merge origin/$TARGET_BRANCH
           
-          if git merge --no-ff --no-edit origin/$SOURCE_BRANCH; then
-            echo "✅ Testing merged state: $(git rev-parse HEAD)"
-          else
-            echo "❌ Merge conflicts - build failed"
-            exit 1
-          fi
+      #     if git merge --no-ff --no-edit origin/$SOURCE_BRANCH; then
+      #       echo "✅ Testing merged state: $(git rev-parse HEAD)"
+      #     else
+      #       echo "❌ Merge conflicts - build failed"
+      #       exit 1
+      #     fi
       
       - uses: ./.github/actions/setup-dotnet
       - name: Build
