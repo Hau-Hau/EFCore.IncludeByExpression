@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  initialize:
+  init:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
@@ -37,7 +37,7 @@ jobs:
             console.log(`Created check run ${check.data.id} with name: ${checkName}`);
 
   test:
-    needs: initialize
+    needs: init
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -75,7 +75,7 @@ jobs:
 
   finalise:
     if: github.event_name == 'pull_request'
-    needs: [initialize, test]
+    needs: [init, test]
     runs-on: ubuntu-latest
     steps:
       - name: Update check run
@@ -96,7 +96,7 @@ jobs:
               await github.rest.checks.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                check_run_id: ${{ needs.initialize.outputs.check-id }},
+                check_run_id: ${{ needs.init.outputs.check-id }},
                 status: 'completed',
                 conclusion: conclusion,
                 output: {
@@ -105,7 +105,7 @@ jobs:
                 }
               });
               
-              console.log(`Successfully updated check run ${{ needs.initialize.outputs.check-id }} with conclusion: ${conclusion}`);
+              console.log(`Successfully updated check run ${{ needs.init.outputs.check-id }} with conclusion: ${conclusion}`);
             } catch (error) {
               console.error('Error updating check run:', error);
               core.setFailed(`Failed to update check run: ${error.message}`);
