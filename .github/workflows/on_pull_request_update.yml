@@ -75,7 +75,7 @@ jobs:
 
   finalise:
     if: github.event_name == 'pull_request'
-    needs: test
+    needs: [initialize, test]
     runs-on: ubuntu-latest
     steps:
       - name: Update check run
