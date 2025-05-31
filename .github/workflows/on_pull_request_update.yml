@@ -1,4 +1,4 @@
-name: Test
+name: On pull request update
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
         with:
           script: |
             # const checkName = `Test-${context.payload.pull_request.base.ref}-PR${context.payload.pull_request.number}`;
-            const checkName = `Test-PR${context.payload.pull_request.number}`;
+            const checkName = `PR Validation`;
             const uniqueExternalId = `${context.payload.pull_request.number}-${context.payload.pull_request.base.ref}-${context.payload.pull_request.head.sha}-${Date.now()}`;
             
             const check = await github.rest.checks.create({
