@@ -17,6 +17,32 @@ jobs:
           fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
           token: ${{ secrets.GITHUB_TOKEN }}
           clean: true
+
+      - name: Set run context
+        id: context
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "run_type=PR" >> $GITHUB_OUTPUT
+            echo "identifier=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+            echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run_type=Manual" >> $GITHUB_OUTPUT
+            echo "identifier=manual-$(date +%s)" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "base_branch=N/A" >> $GITHUB_OUTPUT
+          else
+            echo "run_type=Push" >> $GITHUB_OUTPUT
+            echo "identifier=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "base_branch=N/A" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Run type: ${{ steps.context.outputs.run_type }}"
+          echo "Identifier: ${{ steps.context.outputs.identifier }}"
+          echo "Branch: ${{ steps.context.outputs.branch }}"
+          echo "Base branch: ${{ steps.context.outputs.base_branch }}"
+          echo "SHA: ${{ github.sha }}"
       
       - name: Merge latest target branch
         if: github.event_name == 'pull_request'
