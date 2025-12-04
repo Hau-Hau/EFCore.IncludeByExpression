@@ -56,7 +56,7 @@ jobs:
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = [xml](Get-Content $csProjPath)
-          efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
+          $efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
           $version = $efCoreVersion -replace '\d+$', 'x'
           $branchName = "release/EFCore.IncludeByExpression/$($version)"
           "value=$($branchName)" >> $env:GITHUB_OUTPUT
@@ -78,7 +78,7 @@ jobs:
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = [xml](Get-Content $csProjPath)
-          efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
+          $efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
           $newVersion = $efCoreVersion -replace 'x$', '0'
           $content = Get-Content -Path $csProjPath -Raw
           $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
