@@ -66,15 +66,8 @@ runs:
 
         Write-Host "Processing numeric comparison for single TargetFramework..."
 
-        $numericVersions = $TargetDotnetVersions -replace "^net" | ForEach-Object { 
-          Write-Host "Parsed numeric target version: $_"
-          [decimal]$_ 
-        }
-
-        $checkNumeric = $projectTargetFramework -replace "^net" | ForEach-Object { 
-          Write-Host "Parsed numeric project version: $_"
-          [decimal]$_ 
-        }
+        $numericVersions = $TargetDotnetVersions | ForEach-Object { [decimal]($_ -replace '^net') }
+        $checkNumeric = [decimal]($projectTargetFramework -replace '^net')
         
         $highestVersion = ($numericVersions | Measure-Object -Maximum).Maximum
         Write-Host "Highest target version: $highestVersion"
