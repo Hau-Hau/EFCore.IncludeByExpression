@@ -37,7 +37,7 @@ jobs:
             exit 0
           fi
 
-          is_recurring_call="$([[ "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/update-version$ ]] && echo true || echo false)"
+          is_recurring_call="$([[ "$GITHUB_HEAD_REF" =~ ^bot\/[^\/]+\/update-version-abstractions$ ]] && echo true || echo false)"
           if [[ "$is_recurring_call" == "true" ]]; then
             echo "result=false" >> $GITHUB_OUTPUT
             exit 0
@@ -118,7 +118,7 @@ jobs:
       - name: Set branch name
         id: set-branch-name
         run: |
-          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version" >> $GITHUB_OUTPUT
+          echo "value=bot/${{ steps.set-project-name.outputs.value }}/update-version-abstractions" >> $GITHUB_OUTPUT
       # - name: Reset branch
       #   run: |
       #     BRANCH="${{ steps.set-branch-name.outputs.value }}"
