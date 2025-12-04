@@ -41,7 +41,7 @@ runs:
           "result=$("$($hasDifferences)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           exit 0  
         }
-        $projectTargetFramework = $csprojXml.Project.PropertyGroup.TargetFramework
+        $projectTargetFramework = $csprojXml.Project.PropertyGroup.TargetFramework | Where-Object { ![string]::IsNullOrWhitespace($_) } | Select-Object -First 1
         Write-Host "Single TargetFramework detected: $projectTargetFramework"
         if ([string]::IsNullOrWhitespace($projectTargetFramework)) {
           Write-Host "No TargetFrameworks or TargetFramework found in $csProjPath"
