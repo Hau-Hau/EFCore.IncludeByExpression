@@ -1,0 +1,259 @@
+name: Auto-Release
+
+on:
+  schedule:
+    - cron: '0 0 * * 6'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: dry-run
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+  
+      - name: Validate
+        id: validate
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "Scheduled run - skipping user validation"
+            echo "result=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          IFS=',' read -r -a username_array <<< "${{ secrets.ACCEPT_RELEASE_PR_ALLOW_LIST }}"
+          user_found=false
+          for username in "${username_array[@]}"
+          do
+              if [ "$username" == "${{ github.actor }}" ]; then
+                  user_found=true
+                  break
+              fi
+          done
+          if [ "$user_found" = "false" ]; then
+            echo "User ${{ github.actor }} is not authorized to execute this workflow."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+          
+  has-changes:
+    needs: [validate]
+    if: needs.validate.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      abstractions: ${{ steps.finalize.outputs.abstractions }}
+      lib80x: ${{ steps.finalize.outputs.lib80x }}
+      lib90x: ${{ steps.finalize.outputs.lib90x }}
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression.Abstractions
+
+      - uses: ./.github/actions/has-changes
+        id: has-changes-abstractions
+        with:
+          project: EFCore.IncludeByExpression.Abstractions
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/8.0.x
+
+      - uses: ./.github/actions/has-changes
+        id: has-changes-lib-80x
+        with:
+          project: EFCore.IncludeByExpression
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+
+      - uses: ./.github/actions/has-changes
+        id: has-changes-lib-90x
+        with:
+          project: EFCore.IncludeByExpression
+
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/10.0.x
+
+      - uses: ./.github/actions/has-changes
+        id: has-changes-lib-100x
+        with:
+          project: EFCore.IncludeByExpression
+
+      - name: Finalize
+        id: finalize
+        run: |
+          echo "abstractions=${{ steps.has-changes-abstractions.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "lib80x=${{ steps.has-changes-lib-80x.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "lib90x=${{ steps.has-changes-lib-90x.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "lib100x=${{ steps.has-changes-lib-100x.outputs.result }}" >> $GITHUB_OUTPUT
+
+  release-abstractions:
+    needs: [has-changes]
+    if: needs.has-changes.outputs.abstractions == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+      
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression.Abstractions
+
+      - uses: ./.github/actions/deploy
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          solution: ./EFCore.IncludeByExpression.sln
+          project: EFCore.IncludeByExpression.Abstractions
+          dry-run: ${{ inputs.dry-run }}
+
+  tag-abstractions:
+    needs: [release-abstractions]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+      
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression.Abstractions
+
+      - name: Tag
+        shell: bash
+        run: |
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+          hash=$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+ 
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "git tag -a \"EFCore.IncludeByExpression.Abstractions/$version\" -m \"EFCore.IncludeByExpression.Abstractions v$version\" $hash"
+            echo "git push origin tag \"EFCore.IncludeByExpression.Abstractions/$version\""
+          else
+            git tag -a "EFCore.IncludeByExpression.Abstractions/$version" -m "EFCore.IncludeByExpression.Abstractions v$version" $hash
+            git push origin tag "EFCore.IncludeByExpression.Abstractions/$version"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-lib-80x:
+    needs: [has-changes]
+    if: needs.has-changes.outputs.lib80x == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+      
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/8.0.x
+
+      - uses: ./.github/actions/deploy
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          solution: ./EFCore.IncludeByExpression.sln
+          project: EFCore.IncludeByExpression
+          dry-run: ${{ inputs.dry-run }}
+
+  tag-lib-80x:
+    needs: [release-lib-80x]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+      
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+
+      - name: Tag
+        shell: bash
+        run: |
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          hash=$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+ 
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "git tag -a \"EFCore.IncludeByExpression/$version\" -m \"EFCore.IncludeByExpression v$version\" $hash"
+            echo "git push origin tag \"EFCore.IncludeByExpression/$version\""
+          else
+            git tag -a "EFCore.IncludeByExpression/$version" -m "EFCore.IncludeByExpression v$version" $hash
+            git push origin tag "EFCore.IncludeByExpression/$version"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-lib-90x:
+    needs: [has-changes]
+    if: needs.has-changes.outputs.lib90x == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+      
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+
+      - uses: ./.github/actions/deploy
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          solution: ./EFCore.IncludeByExpression.sln
+          project: EFCore.IncludeByExpression
+          dry-run: ${{ inputs.dry-run }}
+
+  tag-lib-90x:
+    needs: [release-lib-90x]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-dotnet
+      
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+
+      - name: Tag
+        shell: bash
+        run: |
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          hash=$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+ 
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "git tag -a \"EFCore.IncludeByExpression/$version\" -m \"EFCore.IncludeByExpression v$version\" $hash"
+            echo "git push origin tag \"EFCore.IncludeByExpression/$version\""
+          else
+            git tag -a "EFCore.IncludeByExpression/$version" -m "EFCore.IncludeByExpression v$version" $hash
+            git push origin tag "EFCore.IncludeByExpression/$version"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
