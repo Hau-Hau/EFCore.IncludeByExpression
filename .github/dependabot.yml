@@ -14,6 +14,20 @@ updates:
     schedule:
       interval: daily
   - package-ecosystem: nuget
+    target-branch: release/EFCore.IncludeByExpression/10.0.x
+    directory: "/"
+    schedule:
+      interval: daily
+    ignore:
+      - dependency-name: Microsoft.EntityFrameworkCore
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: Microsoft.EntityFrameworkCore.Design
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: Microsoft.EntityFrameworkCore.InMemory
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: Microsoft.EntityFrameworkCore.Relational
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+  - package-ecosystem: nuget
     target-branch: release/EFCore.IncludeByExpression/9.0.x
     directory: "/"
     schedule:
@@ -41,5 +55,3 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: Microsoft.EntityFrameworkCore.Relational
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-
-
