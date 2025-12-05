@@ -143,9 +143,24 @@ jobs:
             fi
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-lib100x:
+    needs: [has-changes]
+    if: needs.has-changes.outputs.lib100x == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/10.0.x
+      - name: Build
+        run: dotnet build . --configuration Debug
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal
+
   release-lib100x:
-      needs: [has-changes]
-      if: needs.has-changes.outputs.lib100x == 'true'
+      needs: [test-lib100x]
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v4
@@ -163,7 +178,6 @@ jobs:
 
   tag-lib100x:
       needs: [release-lib100x]
-      if: needs.has-changes.outputs.lib100x == 'true'
       runs-on: ubuntu-latest
       permissions:
         contents: write
@@ -188,9 +202,24 @@ jobs:
             fi
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-lib90x:
+    needs: [has-changes]
+    if: needs.has-changes.outputs.lib90x == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+      - name: Build
+        run: dotnet build . --configuration Debug
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal
+
   release-lib90x:
-      needs: [has-changes]
-      if: needs.has-changes.outputs.lib90x == 'true'
+      needs: [test-lib90x]
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v4
@@ -208,7 +237,6 @@ jobs:
 
   tag-lib90x:
       needs: [release-lib90x]
-      if: needs.has-changes.outputs.lib90x == 'true'
       runs-on: ubuntu-latest
       permissions:
         contents: write
@@ -233,9 +261,24 @@ jobs:
             fi
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-lib80x:
+    needs: [has-changes]
+    if: needs.has-changes.outputs.lib80x == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+      - name: Build
+        run: dotnet build . --configuration Debug
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal
+
   release-lib80x:
-      needs: [has-changes]
-      if: needs.has-changes.outputs.lib80x == 'true'
+      needs: [test-lib80x]
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v4
@@ -253,7 +296,6 @@ jobs:
 
   tag-lib80x:
       needs: [release-lib80x]
-      if: needs.has-changes.outputs.lib80x == 'true'
       runs-on: ubuntu-latest
       permissions:
         contents: write

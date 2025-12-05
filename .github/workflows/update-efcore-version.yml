@@ -512,9 +512,23 @@ jobs:
             $STEPS_HAS_CHANGES_LIB_XXX_OUTPUTS_RESULT = "$%{{ steps.has-changes-lib-$($versionKey).outputs.result }}" -replace '%', ''
             $document += @"
 
+            test-lib$($versionKey):
+              needs: [has-changes]
+              if: needs.has-changes.outputs.lib$($versionKey) == 'true'
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression/$libVersion
+                - name: Build
+                  run: dotnet build . --configuration Debug
+                - name: Test
+                  run: dotnet test --no-restore --verbosity normal
+
             release-lib$($versionKey):
-                needs: [has-changes]
-                if: needs.has-changes.outputs.lib$($versionKey) == 'true'
+                needs: [test-lib$($versionKey)]
                 runs-on: ubuntu-latest
                 steps:
                   - uses: actions/checkout@v4
@@ -532,7 +546,6 @@ jobs:
 
             tag-lib$($versionKey):
                 needs: [release-lib$($versionKey)]
-                if: needs.has-changes.outputs.lib$($versionKey) == 'true'
                 runs-on: ubuntu-latest
                 permissions:
                   contents: write
