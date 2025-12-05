@@ -92,7 +92,11 @@ runs:
         }
 
         $tagPattern = $currentBranch -replace 'release/', ''
-        $tagPattern = $tagPattern -replace '\.x', '.*'
+        if ($CurrentBranch.EndsWith(".x")) {
+          $tagPattern = $tagPattern -replace '\.x', '.*'
+        } else {
+          $tagPattern = $tagPattern + "/*"
+        }
 
         # Fetch hash of last release based on the project input
         $lastReleaseHash = git tag -l "$tagPattern" | Sort-Object { [version]($_ -split '/' | Select-Object -Last 1) } | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
