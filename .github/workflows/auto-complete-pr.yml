@@ -20,7 +20,7 @@ jobs:
       - name: Get and complete oldest PR
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.PAT }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
         run: |
           $ErrorActionPreference = 'Stop'
           
