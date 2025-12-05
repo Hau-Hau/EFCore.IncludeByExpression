@@ -95,7 +95,7 @@ runs:
         $tagPattern = $tagPattern -replace '\.x', '.*'
 
         # Fetch hash of last release based on the project input
-        $lastReleaseHash = git tag -l "$($tagPattern)" | Sort-Object -V | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
+        $lastReleaseHash = git tag -l "$tagPattern" | Sort-Object { [version]($_ -split '/' | Select-Object -Last 1) } | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
         if (-not $lastReleaseHash) {
           "result=true" >> $env:GITHUB_OUTPUT
           exit 0
