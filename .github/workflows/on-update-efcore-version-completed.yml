@@ -1,4 +1,4 @@
-name: On update-dotnet-version completed
+name: On update-efcore-version completed
 
 on:
   workflow_dispatch:
@@ -56,8 +56,9 @@ jobs:
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = [xml](Get-Content $csProjPath)
-          $projectTargetFramework = "$($csprojXml.Project.PropertyGroup.TargetFramework)".Trim()
-          $branchName = "release/EFCore.IncludeByExpression/$($projectTargetFramework)"
+          $efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
+          $version = $efCoreVersion -replace '\d+$', 'x'
+          $branchName = "release/EFCore.IncludeByExpression/$($version)"
           "value=$($branchName)" >> $env:GITHUB_OUTPUT
 
       - name: is-branch-exists
@@ -72,14 +73,15 @@ jobs:
           branch: ${{ steps.get-branch-name.outputs.value }}
           hard-reset: main
 
-      - name: Set new version number
+      - name: Update PackageVersion
         shell: pwsh
         run: |
           $csProjPath = "$([IO.Path]::Combine(".", "EFCore.IncludeByExpression", "EFCore.IncludeByExpression.csproj"))"
           $csprojXml = [xml](Get-Content $csProjPath)
-          $newVersion = ("$($csprojXml.Project.PropertyGroup.TargetFramework)".Trim() -replace 'net', '') + ".0"
+          $efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
+          $newVersion = $efCoreVersion -replace 'x$', '0'
           $content = Get-Content -Path $csProjPath -Raw
-          $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
+          $updatedContent = $content -replace '<PackageVersion>\s*<\/PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
           Set-Content -Path $csProjPath -Value $updatedContent
 
       - uses: ./.github/actions/commit-changes

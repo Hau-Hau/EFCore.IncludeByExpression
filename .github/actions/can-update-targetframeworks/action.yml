@@ -18,36 +18,53 @@ runs:
       with:
         fetch-depth: 0
         fetch-tags: true
-
     - name: Validate
       shell: pwsh
       id: validate
       run: |
+        Write-Host "Selected project: ${{ inputs.project }}"
+        Write-Host "Target .NET versions (raw): ${{ inputs.target-dotnet-versions }}"
         $TargetDotnetVersions = "${{ inputs.target-dotnet-versions }}" -split ","
+        Write-Host "Parsed target versions:" ($TargetDotnetVersions -join ", ")
         $SelectedProject = "${{ inputs.project }}"
         $csProjPath = "$([IO.Path]::Combine(".", "$($SelectedProject)", "$($SelectedProject).csproj"))"
+        Write-Host "Project file path: $csProjPath"
         $csprojXml = [xml](Get-Content $csProjPath)
-
+        Write-Host "Loaded .csproj XML."
         $projectTargetFrameworksStr = $csprojXml.Project.PropertyGroup.TargetFrameworks
         if (![string]::IsNullOrWhitespace($projectTargetFrameworksStr)) {
+          Write-Host "Detected multi-targeting: $projectTargetFrameworksStr"
           $projectTargetFrameworks = @($projectTargetFrameworksStr -split ';' -match '\S')
+          Write-Host "Parsed project frameworks:" ($projectTargetFrameworks -join ", ")
           $hasDifferences = [Bool](Compare-Object -ReferenceObject $projectTargetFrameworks -DifferenceObject $TargetDotnetVersions)
+          Write-Host "Differences detected between project and target versions: $hasDifferences"
           "result=$("$($hasDifferences)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           exit 0  
         }
-
-        $projectTargetFramework = $csprojXml.Project.PropertyGroup.TargetFramework
+        $projectTargetFramework = $csprojXml.Project.PropertyGroup.TargetFramework | Where-Object { ![string]::IsNullOrWhitespace($_) } | Select-Object -First 1
+        Write-Host "Single TargetFramework detected: $projectTargetFramework"
         if ([string]::IsNullOrWhitespace($projectTargetFramework)) {
-          Write-Host "No TargetFrameworks or TargetFramework found in $($path)"
+          Write-Host "No TargetFrameworks or TargetFramework found in $csProjPath"
           exit 1
         }
-
         if ($projectTargetFramework -like 'netstandard*') {
+          Write-Host "Project targets netstandard; no update required."
           "result=false" >> $env:GITHUB_OUTPUT
           exit 0
         }
-
-        $currentVersion = [decimal]@($projectTargetFramework -replace "^net")[0]
-        $numericVersions = $TargetDotnetVersions -replace "^net" | ForEach-Object { [decimal]$_ }
+        Write-Host "Processing numeric comparison for single TargetFramework..."
+        $numericVersions = @($TargetDotnetVersions | ForEach-Object { 
+          $numericValue = [decimal]($_ -replace "^net")
+          Write-Host "Parsed numeric target version: $numericValue"
+          $numericValue
+        })
+        
+        $checkNumeric = [decimal]($projectTargetFramework -replace "^net")
+        Write-Host "Parsed numeric project version: $checkNumeric"
+        
         $highestVersion = ($numericVersions | Measure-Object -Maximum).Maximum
-        "result=$("$($highestVersion -gt $currentVersion)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+        Write-Host "Highest target version: $highestVersion"
+        Write-Host "Project version: $checkNumeric"
+        $needsUpdate = $checkNumeric -ne $highestVersion
+        Write-Host "Does project need update? $needsUpdate"
+        "result=$("$($needsUpdate)".ToLowerInvariant())" >> $env:GITHUB_OUTPUT

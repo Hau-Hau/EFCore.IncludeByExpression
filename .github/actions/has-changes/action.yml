@@ -80,9 +80,9 @@ runs:
 
         $SelectedProject = "${{ inputs.project }}"
 
-        $currentHash = git rev-parse origin/main
+        $currentHash = git rev-parse HEAD
         if (-not $currentHash) {
-          Write-Host "Cannot fetch hash of origin/main"
+          Write-Host "Cannot fetch hash of HEAD"
           exit 1
         }
 
