@@ -81,7 +81,7 @@ jobs:
           $efCoreVersion = $csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" } | Select-Object -ExpandProperty Version
           $newVersion = $efCoreVersion -replace 'x$', '0'
           $content = Get-Content -Path $csProjPath -Raw
-          $updatedContent = $content -replace '<PackageVersion>.*?</PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
+          $updatedContent = $content -replace '<PackageVersion>\s*<\/PackageVersion>', "<PackageVersion>$newVersion</PackageVersion>"
           Set-Content -Path $csProjPath -Value $updatedContent
 
       - uses: ./.github/actions/commit-changes
