@@ -460,9 +460,23 @@ jobs:
 
           $document += @"
 
+            test-abstractions:
+              needs: [has-changes]
+              if: needs.has-changes.outputs.abstractions == 'true'
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression.Abstractions
+                - name: Build
+                  run: dotnet build . --configuration Debug
+                - name: Test
+                  run: dotnet test --no-restore --verbosity normal
+
             release-abstractions:
-                needs: [has-changes]
-                if: needs.has-changes.outputs.abstractions == 'true'
+                needs: [test-abstractions]
                 runs-on: ubuntu-latest
                 steps:
                   - uses: actions/checkout@v4
@@ -493,15 +507,15 @@ jobs:
                   - name: Tag
                     shell: bash
                     run: |
-                      version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
-                      hash=$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+                      version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+                      hash=`$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
             
                       if [[ "$($INPUTS_DRY_RUN)" == "true" ]]; then
-                        echo "git tag -a \"EFCore.IncludeByExpression.Abstractions/$version\" -m \"EFCore.IncludeByExpression.Abstractions v$version\" $hash"
-                        echo "git push origin tag \"EFCore.IncludeByExpression.Abstractions/$version\""
+                        echo "git tag -a \"EFCore.IncludeByExpression.Abstractions/`$version\" -m \"EFCore.IncludeByExpression.Abstractions v`$version\" `$hash"
+                        echo "git push origin tag \"EFCore.IncludeByExpression.Abstractions/`$version\""
                       else
-                        git tag -a "EFCore.IncludeByExpression.Abstractions/$version" -m "EFCore.IncludeByExpression.Abstractions v$version" $hash
-                        git push origin tag "EFCore.IncludeByExpression.Abstractions/$version"
+                        git tag -a "EFCore.IncludeByExpression.Abstractions/`$version" -m "EFCore.IncludeByExpression.Abstractions v`$version" `$hash
+                        git push origin tag "EFCore.IncludeByExpression.Abstractions/`$version"
                       fi
                     env:
                       GITHUB_TOKEN: $($SECRETS_GITHUB_TOKEN)
@@ -558,15 +572,15 @@ jobs:
                   - name: Tag
                     shell: bash
                     run: |
-                      version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
-                      hash=$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+                      version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+                      hash=`$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
             
                       if [[ "$($INPUTS_DRY_RUN)" == "true" ]]; then
-                        echo "git tag -a \"EFCore.IncludeByExpression/$version\" -m \"EFCore.IncludeByExpression v$version\" $hash"
-                        echo "git push origin tag \"EFCore.IncludeByExpression/$version\""
+                        echo "git tag -a \"EFCore.IncludeByExpression/`$version\" -m \"EFCore.IncludeByExpression v`$version\" `$hash"
+                        echo "git push origin tag \"EFCore.IncludeByExpression/`$version\""
                       else
-                        git tag -a "EFCore.IncludeByExpression/$version" -m "EFCore.IncludeByExpression v$version" $hash
-                        git push origin tag "EFCore.IncludeByExpression/$version"
+                        git tag -a "EFCore.IncludeByExpression/`$version" -m "EFCore.IncludeByExpression v`$version" `$hash
+                        git push origin tag "EFCore.IncludeByExpression/`$version"
                       fi
                     env:
                       GITHUB_TOKEN: $($SECRETS_GITHUB_TOKEN)
