@@ -17,7 +17,7 @@ on:
           - release/EFCore.IncludeByExpression/8.0.x
   # Do not edit. Section is edited by pipeline.
   workflow_run:
-    workflows: ["service::event_dispatcher::pull_request::closed::release_EFCore.IncludeByExpression"]
+    workflows: ["service::event_dispatcher::pull_request::closed::release/EFCore.IncludeByExpression"]
     types:
       - completed
 
