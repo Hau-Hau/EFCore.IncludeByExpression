@@ -1,0 +1,20 @@
+name: "service::event_dispatcher::pull_request::closed::release/EFCore.IncludeByExpression"
+
+on:
+  pull_request:
+    types: [closed]
+    branches: 
+      - release/EFCore.IncludeByExpression/10.0.x
+      - release/EFCore.IncludeByExpression/9.0.x
+      - release/EFCore.IncludeByExpression/8.0.x
+
+jobs:
+  mark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emit metadata
+        run: |
+          echo "Running for PR ${{ github.event.number }}"
+          echo "State: ${{ github.event.pull_request.state }}"
+          echo "Base ref: ${{ github.event.pull_request.base.ref }}"
+          echo "Merged: ${{ github.event.pull_request.merged }}"
