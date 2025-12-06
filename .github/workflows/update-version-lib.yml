@@ -38,7 +38,7 @@ jobs:
       - name: Initialize
         id: initialize
         env:
-          GH_TOKEN: ${{ secrets.PAT }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
           WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
