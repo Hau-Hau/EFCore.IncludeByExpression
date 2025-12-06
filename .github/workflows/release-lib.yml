@@ -8,6 +8,7 @@ on:
         required: true
         type: choice
         options:
+          - release/EFCore.IncludeByExpression/10.0.x
           - release/EFCore.IncludeByExpression/9.0.x
           - release/EFCore.IncludeByExpression/8.0.x
       dry-run:
