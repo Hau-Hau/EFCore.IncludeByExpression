@@ -459,10 +459,40 @@ jobs:
           }
 
           $document += @"
-
-            test-abstractions:
+            validate-abstractions:
               needs: [has-changes]
               if: needs.has-changes.outputs.abstractions == 'true'
+              runs-on: ubuntu-latest
+              outputs:
+                result: $($STEPS_VALIDATE_OUTPUTS_RESULT)
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression.Abstractions
+                - name: Validate
+                  id: validate
+                  run: |
+                    version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+                    version_of_last_release=$(git tag -l "EncryptedConfigValue.Abstractions/*" | sort -V | tail -n 1 | sed 's/EncryptedConfigValue.Abstractions\///')
+                    if [[ "$version" == "$version_of_last_release" ]]; then
+                      echo "Current version of EncryptedConfigValue.Abstractions is same as version of last release."
+                      echo "result=false" >> $GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+                      echo "Current version of EncryptedConfigValue.Abstractions is lower than or equal to the version of the last release."
+                      echo "result=false" >> $GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    echo "result=true" >> $GITHUB_OUTPUT
+
+            test-abstractions:
+              needs: [validate-abstractions]
+              if: needs.validate-abstractions.outputs.result == 'true'
               runs-on: ubuntu-latest
               steps:
                 - uses: actions/checkout@v4
@@ -525,10 +555,41 @@ jobs:
             $versionKey = $libVersion -replace '\.', ''
             $STEPS_HAS_CHANGES_LIB_XXX_OUTPUTS_RESULT = "$%{{ steps.has-changes-lib-$($versionKey).outputs.result }}" -replace '%', ''
             $document += @"
-
-            test-lib$($versionKey):
+            
+            validate-lib$($versionKey):
               needs: [has-changes]
               if: needs.has-changes.outputs.lib$($versionKey) == 'true'
+              runs-on: ubuntu-latest
+              outputs:
+                result: $($STEPS_VALIDATE_OUTPUTS_RESULT)
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression/$libVersion
+                - name: Validate
+                  id: validate
+                  run: |
+                    version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+                    version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/$($libVersion -replace '\.x', '*')" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
+                    if [[ "$version" == "$version_of_last_release" ]]; then
+                      echo "Current version is same as version of last release."
+                      echo "result=false" >> $GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+                      echo "Current version is lower than or equal to the version of the last release."
+                      echo "result=false" >> $GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    echo "result=true" >> $GITHUB_OUTPUT
+
+            test-lib$($versionKey):
+              needs: [validate-lib$($versionKey)]
+              if: needs.validate-lib$($versionKey).outputs.result == 'true'
               runs-on: ubuntu-latest
               steps:
                 - uses: actions/checkout@v4
