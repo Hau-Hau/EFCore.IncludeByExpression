@@ -53,37 +53,30 @@ jobs:
             exit 0
           fi
           
-          PR_NUMBER=$(echo '${{ toJson(github.event.workflow_run.pull_requests) }}' | jq -r '.[0].number // empty')
-          if [ -z "$PR_NUMBER" ]; then
-            echo "[skip] No PR number found"
+          PR_JSON=$(gh pr list --repo ${{ github.repository }} --state all --json number,mergeCommit,headRefName,baseRefName,state --search "$HEAD_SHA" --limit 1)
+          if [ "$(echo "$PR_JSON" | jq '. | length')" -eq 0 ]; then
+            echo "[skip] No PR found for commit $HEAD_SHA"
             echo "pull_request_merged=false" >> $GITHUB_OUTPUT
             echo "pull_request_head_ref=" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # Fetch PR details
-          PR_JSON=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json merged,headRefName,baseRefName,state)
-          
-          PR_MERGED=$(echo "$PR_JSON" | jq -r '.merged')
+          PR_JSON=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json headRefName,baseRefName,state)
           PR_STATE=$(echo "$PR_JSON" | jq -r '.state')
-          
-          # Validate PR is closed and targeting main
-          if [ "$PR_STATE" != "CLOSED" ] || [ "$PR_BASE" != "main" ]; then
-            echo "[skip] PR not valid: state=$PR_STATE base=$PR_BASE"
-            exit 0
-          fi
-          
+          PR_BASE_REF_NAME=$(echo "$PR_JSON" | jq -r '.baseRefName')
           PR_HEAD_REF=$(echo "$PR_JSON" | jq -r '.headRefName')
-          PR_BASE=$(echo "$PR_JSON" | jq -r '.baseRefName')
-
+          PR_MERGED="$([[ "$PR_STATE" == "MERGED" ]] && echo true || echo false)"
+          
           echo "pull_request_merged=$PR_MERGED" >> $GITHUB_OUTPUT
           echo "pull_request_head_ref=$PR_HEAD_REF" >> $GITHUB_OUTPUT
+          echo "pull_request_base_ref_name=$PR_BASE_REF_NAME" >> $GITHUB_OUTPUT
 
       - name: Validate
         id: validate
         env:
           PULL_REQUEST_MERGED: ${{ steps.initialize.outputs.pull_request_merged }}
           GITHUB_HEAD_REF: ${{ steps.initialize.outputs.pull_request_head_ref }}
+          GITHUB_BASE_REF: ${{ steps.initialize.outputs.pull_request_base_ref_name }}
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "result=true" >> $GITHUB_OUTPUT
