@@ -99,9 +99,40 @@ jobs:
               echo "lib90x=${{ steps.has-changes-lib-90x.outputs.result }}" >> $GITHUB_OUTPUT
               echo "lib80x=${{ steps.has-changes-lib-80x.outputs.result }}" >> $GITHUB_OUTPUT
 
-  test-abstractions:
+  validate-abstractions:
     needs: [has-changes]
     if: needs.has-changes.outputs.abstractions == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression.Abstractions
+      - name: Validate
+        id: validate
+        run: |
+          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+          version_of_last_release=$(git tag -l "EncryptedConfigValue.Abstractions/*" | sort -V | tail -n 1 | sed 's/EncryptedConfigValue.Abstractions\///')
+          if [[ "$version" == "$version_of_last_release" ]]; then
+            echo "Current version of EncryptedConfigValue.Abstractions is same as version of last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+            echo "Current version of EncryptedConfigValue.Abstractions is lower than or equal to the version of the last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+  test-abstractions:
+    needs: [validate-abstractions]
+    if: needs.validate-abstractions.outputs.result == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -158,9 +189,40 @@ jobs:
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  test-lib100x:
+  validate-lib100x:
     needs: [has-changes]
     if: needs.has-changes.outputs.lib100x == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/10.0.x
+      - name: Validate
+        id: validate
+        run: |
+          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/10.0*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
+          if [[ "$version" == "$version_of_last_release" ]]; then
+            echo "Current version is same as version of last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+            echo "Current version is lower than or equal to the version of the last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+  test-lib100x:
+    needs: [validate-lib100x]
+    if: needs.validate-lib100x.outputs.result == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -217,9 +279,40 @@ jobs:
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  test-lib90x:
+  validate-lib90x:
     needs: [has-changes]
     if: needs.has-changes.outputs.lib90x == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/9.0.x
+      - name: Validate
+        id: validate
+        run: |
+          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/9.0*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
+          if [[ "$version" == "$version_of_last_release" ]]; then
+            echo "Current version is same as version of last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+            echo "Current version is lower than or equal to the version of the last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+  test-lib90x:
+    needs: [validate-lib90x]
+    if: needs.validate-lib90x.outputs.result == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -276,9 +369,41 @@ jobs:
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  test-lib80x:
+  validate-lib80x:
     needs: [has-changes]
     if: needs.has-changes.outputs.lib80x == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/setup-git
+        with:
+          branch: release/EFCore.IncludeByExpression/8.0.x
+      - name: Validate
+        id: validate
+        run: |
+          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/8.0*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
+          if [[ "$version" == "$version_of_last_release" ]]; then
+            echo "Current version is same as version of last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [[ "$(printf '%s\n' "$version" "$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "$version" ]]; then
+            echo "Current version is lower than or equal to the version of the last release."
+            echo "result=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "result=true" >> $GITHUB_OUTPUT
+
+
+  test-lib80x:
+    needs: [validate-lib80x]
+    if: needs.validate-lib80x.outputs.result == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
