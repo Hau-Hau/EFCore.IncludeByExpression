@@ -1,0 +1,18 @@
+name: "service::event_dispatcher::pull_request::closed::release/EFCore.IncludeByExpression.Abstractions"
+
+on:
+  pull_request:
+    types: [closed]
+    branches: 
+      - EFCore.IncludeByExpression.Abstractions
+
+jobs:
+  mark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emit metadata
+        run: |
+          echo "Running for PR ${{ github.event.number }}"
+          echo "State: ${{ github.event.pull_request.state }}"
+          echo "Base ref: ${{ github.event.pull_request.base.ref }}"
+          echo "Merged: ${{ github.event.pull_request.merged }}"
