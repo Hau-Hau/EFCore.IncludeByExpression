@@ -34,7 +34,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
-		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.9" />
+		<PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.13" />
 	</ItemGroup>
 
 </Project>
