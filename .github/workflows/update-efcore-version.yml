@@ -1,4 +1,4 @@
-name: Update supported EFCore version
+name: Update EFCore version
 
 on:
   workflow_dispatch:
@@ -37,20 +37,19 @@ jobs:
         id: active-entityframeworkcore-versions
         shell: pwsh
         run: |
-          $versionString = "${{ steps.active-dotnet-version }}"
+          $versionString = "${{ steps.active-dotnet-version.outputs.value }}"
           $majorVersions = $versionString -split ',' | ForEach-Object { ($_ -replace '.\d+$', '') }
           $efCoreVersions = (Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore/index.json" -UseBasicParsing | ConvertFrom-Json).versions
 
           $activeEfCoreVersions = @()
           foreach ($majorDotnetVersion in $majorVersions) {
-            $efCoreVersion = $efCoreVersions | Where-Object { $_.StartsWith($majorDotnetVersion) -and $_ -match "^\d+.\d+.\d+$" } | Select-Object -Last 1
-            if ([string]::IsNullOrWhitespace($activeVersions)) {
+            $efCoreVersion = $efCoreVersions | Where-Object { $_.StartsWith(($majorDotnetVersion -replace 'net', '')) -and $_ -match "^\d+.\d+.\d+$" } | Select-Object -Last 1
+            if ([string]::IsNullOrWhitespace($efCoreVersion)) {
               continue
             }
 
             $activeEfCoreVersions = $activeEfCoreVersions + @($efCoreVersion)
-          }
-
+           }
           "value=$($activeEfCoreVersions -join ",")" >> $env:GITHUB_OUTPUT
       - name: Get highest supported dotnet version
         id: highest-dotnet-version
@@ -121,17 +120,17 @@ jobs:
       - uses: ./.github/actions/update-dotnet-version
         with:
           project: ${{ steps.set-project-name.outputs.value }}
-          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version }}
       - uses: ./.github/actions/update-dotnet-version
         with:
           project: ${{ steps.set-project-name.outputs.value }}.Tests
-          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version.value }}
+          target-dotnet-versions: ${{ needs.init.outputs.highest-dotnet-version }}
       - name: Update Microsoft.EntityFrameworkCore version in ${{ steps.set-project-name.outputs.value }}
         shell: pwsh
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}/${{ steps.set-project-name.outputs.value }}.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -140,7 +139,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}.Tests/${{ steps.set-project-name.outputs.value }}.Tests.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -149,7 +148,7 @@ jobs:
         run: |
           $filePath = "./${{ steps.set-project-name.outputs.value }}.Tests/${{ steps.set-project-name.outputs.value }}.Tests.csproj"
           $csprojXml = [xml](Get-Content $filePath)
-          $efCoreVersionsString = "${{ steps.active-entityframeworkcore-versions.outputs.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $highestEfCoreVersion = "$($efCoreVersionsString -split ',' | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
           ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Microsoft.EntityFrameworkCore" }).version = $highestEfCoreVersion
           $csprojXml.Save($filePath)
@@ -169,8 +168,8 @@ jobs:
           $csprojXml = [xml](Get-Content $filePath)
           $packageName = "Microsoft.EntityFrameworkCore.InMemory"
           $highestPackageVersion = "$((Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/$($packageName.ToLower())/index.json" -UseBasicParsing | ConvertFrom-Json).versions | Where-Object { $_ -match "^\d+.\d+.\d+$" } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
-          ($xml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
-          $xml.Save($filePath)
+          ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
+          $csprojXml.Save($filePath)
       - name: Update Microsoft.EntityFrameworkCore.Relational version in ${{ steps.set-project-name.outputs.value }}.Tests
         shell: pwsh
         run: |
@@ -178,8 +177,8 @@ jobs:
           $csprojXml = [xml](Get-Content $filePath)
           $packageName = "Microsoft.EntityFrameworkCore.Relational"
           $highestPackageVersion = "$((Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/$($packageName.ToLower())/index.json" -UseBasicParsing | ConvertFrom-Json).versions | Where-Object { $_ -match "^\d+.\d+.\d+$" } | ForEach-Object { [Version]$_ } | Sort-Object -Descending | Select-Object -First 1)"
-          ($xml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
-          $xml.Save($filePath)
+          ($csprojXml.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq $packageName }).version = $highestPackageVersion
+          $csprojXml.Save($filePath)
       - uses: ./.github/actions/commit-changes
         with:
           message: Update .NET version in ${{ steps.set-project-name.outputs.value }}
@@ -229,7 +228,7 @@ jobs:
       - name: Update setup-dotnet/action.yml action
         shell: pwsh
         run: |
-          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions.value }}"
+          $efCoreVersionsString = "${{ needs.init.outputs.active-entityframeworkcore-versions }}"
           $efCoreVersions = @($efCoreVersionsString -split ',')
           
           $dotnetVersions = @()
@@ -252,31 +251,19 @@ jobs:
         run: |
           $filePath = "./.github/workflows/release-lib.yml"
           $libVersions = @("${{ needs.init.outputs.active-entityframeworkcore-versions }}" -split ',') | ForEach-Object { ($_ -replace '\d+$', 'x') }
+          $newOptions = @($libVersions | ForEach-Object { "release/EFCore.IncludeByExpression/$($_)" })
           $yamlContent = Get-Content $filePath -Raw
-          $newOptionsString = "`n          - release/EFCore.IncludeByExpression/" + ($libVersions -join "`n          - release/EFCore.IncludeByExpression/")
-          $pattern = '(?ms)(dotnet:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [0-9.]+)+(?=\s+\w+:|\s*$)'
+          $optionsPattern = '(?ms)(branch:\s+required:\s+true\s+type:\s+choice\s+options:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
           $replacement = "`$1$newOptionsString"
-          $updatedContent = $yamlContent -replace $pattern, $replacement
+          $updatedContent = $yamlContent -replace $optionsPattern, $replacement
           $updatedContent | Set-Content -Path $filePath -NoNewline
-      # - name: Update tests.yml workflow
-      #   shell: pwsh
-      #   run: |
-      #     $filePath = "./.github/workflows/tests.yml"
-      #     $versionString = "${{ needs.init.outputs.active-dotnet-version }}"
-      #     $newOptions = @("main") + @($versionString -split ',' | ForEach-Object { ($_ -replace 'net', 'release/EFCore.IncludeByExpression/net') }) + @("release/EFCore.IncludeByExpression.Abstractions")
-      #     $yamlContent = Get-Content $filePath -Raw
-      #     $newBranchesString = "`n      - " + ($newOptions -join "`n      - ")
-      #     $pattern = '(?ms)(push:\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
-      #     $replacement = "`$1$newBranchesString"
-      #     $updatedContent = $yamlContent -replace $pattern, $replacement
-      #     $updatedContent | Set-Content -Path $filePath -NoNewline
       - name: Update coverage.yml workflow
         shell: pwsh
         run: |
           $filePath = "./.github/workflows/coverage.yml"
-          $highestDotNetVersion = "${{ needs.init.outputs.highest-dotnet-version.value }}"
+          $highestDotNetVersion = "${{ needs.init.outputs.highest-dotnet-version }}"
           $content = Get-Content -Path $filePath -Raw
-          $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $($highestDotNetVersion).x"
+          $content = $content -replace 'DOTNET_VERSION: (\d+\.\d+\.x)', "DOTNET_VERSION: $($highestDotNetVersion -replace 'net', '').x"
           $content = $content -replace '--framework net\d+\.\d+', "--framework $highestDotNetVersion"
           $content = $content -replace 'coverage\.net\d+\.\d+\.info', "coverage.$highestDotNetVersion.info"
           $content | Set-Content -Path $filePath -NoNewline
@@ -285,7 +272,7 @@ jobs:
         run: |
           $filePath = "./.github/workflows/update-version-lib.yml"
           $libVersions = @("${{ needs.init.outputs.active-entityframeworkcore-versions }}" -split ',') | ForEach-Object { ($_ -replace '\d+$', 'x') }
-          $newOptions = @($libVersions | ForEach-Object { 'release/EFCore.IncludeByExpression/$($_)') })
+          $newOptions = @($libVersions | ForEach-Object { "release/EFCore.IncludeByExpression/$($_)" })
           $yamlContent = Get-Content $filePath -Raw
            
           $newBranchesString = "`n          - " + ($newOptions -join "`n          - ")
@@ -295,10 +282,6 @@ jobs:
           $optionsReplacement = "`$1$newBranchesString"
           $updatedContent = $yamlContent -replace $optionsPattern, $optionsReplacement
           
-          $branchesPattern = '(?ms)(pull_request:\s+types:\s+- closed\s+branches:)(\s+- [^\n]+)+(?=\s+\w+:|\s*$)'
-          $branchesReplacement = "`$1$newPRBranchesString"
-          $updatedContent = $updatedContent -replace $branchesPattern, $branchesReplacement
-
           $updatedContent | Set-Content -Path $filePath -NoNewline
       - name: Regenerate dependabot.yml
         shell: pwsh
@@ -327,9 +310,7 @@ jobs:
               $additionalEntry = @(
                   "  - package-ecosystem: nuget",
                   "    target-branch: release/EFCore.IncludeByExpression/$libVersion",
-                  "    directories:",
-                  "      - `"/EFCore.IncludeByExpression/`"",
-                  "      - `"/EFCore.IncludeByExpression.Tests/`"",
+                  "    directory: `"/`"",
                   "    schedule:",
                   "      interval: daily"
                   "    ignore:"
@@ -344,6 +325,378 @@ jobs:
               )
               $additionalEntry | Out-File -FilePath $filePath -Encoding utf8 -Append
           }
+      - name: Regenerate auto-release.yml workflow
+        shell: pwsh
+        run: |
+          $SECRETS_GITHUB_TOKEN = "$%{{ secrets.GITHUB_TOKEN }}" -replace '%', ''
+          $SECRETS_NUGET_API_KEY = "$%{{ secrets.NUGET_API_KEY }}" -replace '%', ''
+          $INPUTS_DRY_RUN = "$%{{ inputs.dry-run }}" -replace '%', ''
+          $STEPS_VALIDATE_OUTPUTS_RESULT = "$%{{ steps.validate.outputs.result }}" -replace '%', ''
+          $GITHUB_EVENT_NAME = "$%{{ github.event_name }}" -replace '%', ''
+          $SECRETS_ACCEPT_RELEASE_PR_ALLOW_LIST = "$%{{ secrets.ACCEPT_RELEASE_PR_ALLOW_LIST }}" -replace '%', ''
+          $GITHUB_ACTOR = "$%{{ github.actor }}" -replace '%', ''
+          $STEPS_HAS_CHANGES_ABSTRACTIONS_OUTPUTS_RESULT = "$%{{ steps.has-changes-abstractions.outputs.result }}" -replace '%', ''
+          $STEPS_FINALIZE_OUTPUTS_ABSTRACTIONS = "$%{{ steps.finalize.outputs.abstractions }}" -replace '%', ''
+          $filePath = "./.github/workflows/auto-release.yml"
+          $libVersions = @("${{ needs.init.outputs.active-entityframeworkcore-versions }}" -split ',') | ForEach-Object { ($_ -replace '\d+$', 'x') }
+          $document = @"
+          #------------------------------------------------------------------------------
+          # This code was generated by update-efcore-version.yml pipeline.
+          # Changes to this file will be lost if the code is regenerated.
+          #------------------------------------------------------------------------------
+          name: Auto-Release
+
+          on:
+            schedule:
+              - cron: '0 0 * * 6'
+            workflow_dispatch:
+              inputs:
+                dry-run:
+                  description: dry-run
+                  required: true
+                  type: boolean
+                  default: false
+
+          jobs:
+            validate:
+              runs-on: ubuntu-latest
+              outputs:
+                result: $($STEPS_VALIDATE_OUTPUTS_RESULT)
+              steps:
+                - uses: actions/checkout@v4
+                  with:
+                    fetch-depth: 0
+                    fetch-tags: true
+            
+                - name: Validate
+                  id: validate
+                  run: |
+                    if [ "$($GITHUB_EVENT_NAME)" == "schedule" ]; then
+                      echo "Scheduled run - skipping user validation"
+                      echo "result=true" >> `$GITHUB_OUTPUT
+                      exit 0
+                    fi
+                    
+                    IFS=',' read -r -a username_array <<< "$($SECRETS_ACCEPT_RELEASE_PR_ALLOW_LIST)"
+                    user_found=false
+                    for username in "${username_array[@]}"
+                    do
+                        if [ "$username" == "$($GITHUB_ACTOR)" ]; then
+                            user_found=true
+                            break
+                        fi
+                    done
+                    if [ "$user_found" = "false" ]; then
+                      echo "User $($GITHUB_ACTOR) is not authorized to execute this workflow."
+                      echo "result=false" >> `$GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    echo "result=true" >> `$GITHUB_OUTPUT
+
+            has-changes:
+                needs: [validate]
+                if: needs.validate.outputs.result == 'true'
+                runs-on: ubuntu-latest
+                outputs:
+                  abstractions: $($STEPS_FINALIZE_OUTPUTS_ABSTRACTIONS)
+          "@
+            
+            foreach ($libVersion in $libVersions) {
+              $versionKey = $libVersion -replace '\.', ''
+              $STEPS_FINALIZE_OUTPUTS_LIBXXX = "$%{{ steps.finalize.outputs.lib$($versionKey) }}" -replace '%', ''
+              $document += @"
+
+                  lib$($versionKey): $($STEPS_FINALIZE_OUTPUTS_LIBXXX)
+          "@
+            }
+            $document += @"
+
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: ./.github/actions/setup-git
+                    with:
+                      branch: release/EFCore.IncludeByExpression.Abstractions
+                  - uses: ./.github/actions/has-changes
+                    id: has-changes-abstractions
+                    with:
+                      project: EFCore.IncludeByExpression.Abstractions
+          "@
+
+          foreach ($libVersion in $libVersions) {
+            $versionKey = $libVersion -replace '\.', ''
+            $document += @"
+
+                  - uses: ./.github/actions/setup-git
+                    with:
+                      branch: release/EFCore.IncludeByExpression/$($libVersion)
+                  - uses: ./.github/actions/has-changes
+                    id: has-changes-lib-$($versionKey)
+                    with:
+                      project: EFCore.IncludeByExpression
+          "@
+          }
+
+          $document += @"
+
+                  - name: Finalize
+                    id: finalize
+                    run: |
+                      echo "abstractions=$($STEPS_HAS_CHANGES_ABSTRACTIONS_OUTPUTS_RESULT)" >> `$GITHUB_OUTPUT
+          "@
+
+          foreach ($libVersion in $libVersions) {
+            $versionKey = $libVersion -replace '\.', ''
+            $STEPS_HAS_CHANGES_LIB_XXX_OUTPUTS_RESULT = "$%{{ steps.has-changes-lib-$($versionKey).outputs.result }}" -replace '%', ''
+            $document += @"
+
+                        echo "lib$($versionKey)=$($STEPS_HAS_CHANGES_LIB_XXX_OUTPUTS_RESULT)" >> `$GITHUB_OUTPUT
+          "@
+          }
+
+          $document += @"
+            validate-abstractions:
+              needs: [has-changes]
+              if: needs.has-changes.outputs.abstractions == 'true'
+              runs-on: ubuntu-latest
+              outputs:
+                result: $($STEPS_VALIDATE_OUTPUTS_RESULT)
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression.Abstractions
+                - name: Validate
+                  id: validate
+                  run: |
+                    version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+                    version_of_last_release=`$(git tag -l "EncryptedConfigValue.Abstractions/*" | sort -V | tail -n 1 | sed 's/EncryptedConfigValue.Abstractions\///')
+                    if [[ "`$version" == "`$version_of_last_release" ]]; then
+                      echo "Current version of EncryptedConfigValue.Abstractions is same as version of last release."
+                      echo "result=false" >> $GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    if [[ "`$(printf '%s\n' "`$version" "`$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "`$version" ]]; then
+                      echo "Current version of EncryptedConfigValue.Abstractions is lower than or equal to the version of the last release."
+                      echo "result=false" >> `$GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    echo "result=true" >> `$GITHUB_OUTPUT
+
+            test-abstractions:
+              needs: [validate-abstractions]
+              if: needs.validate-abstractions.outputs.result == 'true'
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression.Abstractions
+                - name: Build
+                  run: dotnet build . --configuration Debug
+                - name: Test
+                  run: dotnet test --no-restore --verbosity normal
+
+            release-abstractions:
+                needs: [test-abstractions]
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: ./.github/actions/setup-dotnet
+                  - uses: ./.github/actions/setup-git
+                    with:
+                      branch: release/EFCore.IncludeByExpression.Abstractions
+                  - uses: ./.github/actions/deploy
+                    with:
+                      GITHUB_TOKEN: $($SECRETS_GITHUB_TOKEN)
+                      NUGET_API_KEY: $($SECRETS_NUGET_API_KEY)
+                      solution: ./EFCore.IncludeByExpression.sln
+                      project: EFCore.IncludeByExpression.Abstractions
+                      dry-run: $($INPUTS_DRY_RUN)
+
+            tag-abstractions:
+                needs: [release-abstractions]
+                if: needs.has-changes.outputs.abstractions == 'true'
+                runs-on: ubuntu-latest
+                permissions:
+                  contents: write
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: ./.github/actions/setup-dotnet
+                  - uses: ./.github/actions/setup-git
+                    with:
+                      branch: release/EFCore.IncludeByExpression.Abstractions
+                  - name: Tag
+                    shell: bash
+                    run: |
+                      version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+                      hash=`$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+            
+                      if [[ "$($INPUTS_DRY_RUN)" == "true" ]]; then
+                        echo "git tag -a \"EFCore.IncludeByExpression.Abstractions/`$version\" -m \"EFCore.IncludeByExpression.Abstractions v`$version\" `$hash"
+                        echo "git push origin tag \"EFCore.IncludeByExpression.Abstractions/`$version\""
+                      else
+                        git tag -a "EFCore.IncludeByExpression.Abstractions/`$version" -m "EFCore.IncludeByExpression.Abstractions v`$version" `$hash
+                        git push origin tag "EFCore.IncludeByExpression.Abstractions/`$version"
+                      fi
+                    env:
+                      GITHUB_TOKEN: $($SECRETS_GITHUB_TOKEN)
+          "@
+
+          foreach ($libVersion in $libVersions) {
+            $versionKey = $libVersion -replace '\.', ''
+            $STEPS_HAS_CHANGES_LIB_XXX_OUTPUTS_RESULT = "$%{{ steps.has-changes-lib-$($versionKey).outputs.result }}" -replace '%', ''
+            $document += @"
+            
+            validate-lib$($versionKey):
+              needs: [has-changes]
+              if: needs.has-changes.outputs.lib$($versionKey) == 'true'
+              runs-on: ubuntu-latest
+              outputs:
+                result: $($STEPS_VALIDATE_OUTPUTS_RESULT)
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression/$libVersion
+                - name: Validate
+                  id: validate
+                  run: |
+                    version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+                    version_of_last_release=`$(git tag -l "EFCore.IncludeByExpression/$($libVersion -replace '\.x', '*')" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
+                    if [[ "`$version" == "`$version_of_last_release" ]]; then
+                      echo "Current version is same as version of last release."
+                      echo "result=false" >> `$GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    if [[ "`$(printf '%s\n' "`$version" "`$version_of_last_release" | sort -V | tail -n 1 | xargs)" != "`$version" ]]; then
+                      echo "Current version is lower than or equal to the version of the last release."
+                      echo "result=false" >> `$GITHUB_OUTPUT
+                      exit 0
+                    fi
+
+                    echo "result=true" >> `$GITHUB_OUTPUT
+
+            test-lib$($versionKey):
+              needs: [validate-lib$($versionKey)]
+              if: needs.validate-lib$($versionKey).outputs.result == 'true'
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: ./.github/actions/setup-dotnet
+                - uses: ./.github/actions/setup-git
+                  with:
+                    branch: release/EFCore.IncludeByExpression/$libVersion
+                - name: Build
+                  run: dotnet build . --configuration Debug
+                - name: Test
+                  run: dotnet test --no-restore --verbosity normal
+
+            release-lib$($versionKey):
+                needs: [test-lib$($versionKey)]
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: ./.github/actions/setup-dotnet
+                  - uses: ./.github/actions/setup-git
+                    with:
+                      branch: release/EFCore.IncludeByExpression/$libVersion
+                  - uses: ./.github/actions/deploy
+                    with:
+                      GITHUB_TOKEN: $($SECRETS_GITHUB_TOKEN))
+                      NUGET_API_KEY: $($SECRETS_NUGET_API_KEY)
+                      solution: ./EFCore.IncludeByExpression.sln
+                      project: EFCore.IncludeByExpression
+                      dry-run: $($INPUTS_DRY_RUN)
+
+            tag-lib$($versionKey):
+                needs: [release-lib$($versionKey)]
+                runs-on: ubuntu-latest
+                permissions:
+                  contents: write
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: ./.github/actions/setup-dotnet
+                  - uses: ./.github/actions/setup-git
+                    with:
+                      branch: release/EFCore.IncludeByExpression/$libVersion
+                  - name: Tag
+                    shell: bash
+                    run: |
+                      version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+                      hash=`$(sed -n 's:.*commit="\([^"]*\)".*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+            
+                      if [[ "$($INPUTS_DRY_RUN)" == "true" ]]; then
+                        echo "git tag -a \"EFCore.IncludeByExpression/`$version\" -m \"EFCore.IncludeByExpression v`$version\" `$hash"
+                        echo "git push origin tag \"EFCore.IncludeByExpression/`$version\""
+                      else
+                        git tag -a "EFCore.IncludeByExpression/`$version" -m "EFCore.IncludeByExpression v`$version" `$hash
+                        git push origin tag "EFCore.IncludeByExpression/`$version"
+                      fi
+                    env:
+                      GITHUB_TOKEN: $($SECRETS_GITHUB_TOKEN)
+          "@
+          }
+
+          Set-Content -Path $filePath -Value $document -NoNewline
+      - name: Regenerate service__event_dispatcher__pull_request__closed__release_branches.yml workflow
+        shell: pwsh
+        run: |
+          $SECRETS_GITHUB_TOKEN = "$%{{ secrets.GITHUB_TOKEN }}" -replace '%', ''
+          $SECRETS_NUGET_API_KEY = "$%{{ secrets.NUGET_API_KEY }}" -replace '%', ''
+          $INPUTS_DRY_RUN = "$%{{ inputs.dry-run }}" -replace '%', ''
+          $STEPS_VALIDATE_OUTPUTS_RESULT = "$%{{ steps.validate.outputs.result }}" -replace '%', ''
+          $GITHUB_EVENT_NAME = "$%{{ github.event_name }}" -replace '%', ''
+          $SECRETS_ACCEPT_RELEASE_PR_ALLOW_LIST = "$%{{ secrets.ACCEPT_RELEASE_PR_ALLOW_LIST }}" -replace '%', ''
+          $GITHUB_ACTOR = "$%{{ github.actor }}" -replace '%', ''
+          $STEPS_HAS_CHANGES_ABSTRACTIONS_OUTPUTS_RESULT = "$%{{ steps.has-changes-abstractions.outputs.result }}" -replace '%', ''
+          $STEPS_FINALIZE_OUTPUTS_ABSTRACTIONS = "$%{{ steps.finalize.outputs.abstractions }}" -replace '%', ''
+          $GITHUB_EVENT_NUMBER = "$%{{ github.event.number }}" -replace '%', ''
+          $GITHUB_EVENT_PULL_REQUEST_STATE = "$%{{ github.event.pull_request.state }}" -replace '%', ''
+          $GITHUB_EVENT_PULL_REQUEST_BASE_REF = "$%{{ github.event.pull_request.base.ref }}" -replace '%', ''
+          $GITHUB_EVENT_PULL_REQUEST_MERGED = "$%{{ github.event.pull_request.merged }}" -replace '%', ''
+          
+          $filePath = "./.github/workflows/service__event_dispatcher__pull_request__closed__release_EFCore_IncludeByExpression.yml"
+          $libVersions = @("${{ needs.init.outputs.active-entityframeworkcore-versions }}" -split ',') | ForEach-Object { ($_ -replace '\d+$', 'x') }
+          $document = @"
+          #------------------------------------------------------------------------------
+          # This code was generated by update-efcore-version.yml pipeline.
+          # Changes to this file will be lost if the code is regenerated.
+          #------------------------------------------------------------------------------
+          name: `"service::event_dispatcher::pull_request::closed::release_EFCore.IncludeByExpression`"
+          on:
+            pull_request:
+              types: [closed]
+              branches:
+          "@
+          foreach ($libVersion in $libVersions) {
+              $document += @"
+
+                  - release/EFCore.IncludeByExpression/$libVersion
+          "@
+          }
+
+          $document += @"
+          
+          jobs:
+            mark:
+              runs-on: ubuntu-latest
+              steps:
+                - name: Emit metadata
+                  run: |
+                    echo "Running for PR $($GITHUB_EVENT_NUMBER)"
+                    echo "State: $($GITHUB_EVENT_PULL_REQUEST_STATE)"
+                    echo "Base ref: $($GITHUB_EVENT_PULL_REQUEST_BASE_REF)"
+                    echo "Merged: $($GITHUB_EVENT_PULL_REQUEST_MERGED)"
+          "@          
+
+          Set-Content -Path $filePath -Value $document -NoNewline
       - uses: ./.github/actions/commit-changes
         with:
           message: Update pipelines
@@ -371,7 +724,7 @@ jobs:
   collect:
     needs: [
       status-tracker-lib,
-      status-tracker-pipelines,
+      status-tracker-pipelines
     ]
     if: always() && contains(needs.*.outputs.completed, 'true') 
     runs-on: ubuntu-latest
