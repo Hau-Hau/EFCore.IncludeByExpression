@@ -114,7 +114,7 @@ jobs:
       - name: Validate
         id: validate
         run: |
-          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression.Abstractions/EFCore.IncludeByExpression.Abstractions.csproj)
           version_of_last_release=$(git tag -l "EncryptedConfigValue.Abstractions/*" | sort -V | tail -n 1 | sed 's/EncryptedConfigValue.Abstractions\///')
           if [[ "$version" == "$version_of_last_release" ]]; then
             echo "Current version of EncryptedConfigValue.Abstractions is same as version of last release."
@@ -204,7 +204,7 @@ jobs:
       - name: Validate
         id: validate
         run: |
-          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
           version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/10.0*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
           if [[ "$version" == "$version_of_last_release" ]]; then
             echo "Current version is same as version of last release."
@@ -294,7 +294,7 @@ jobs:
       - name: Validate
         id: validate
         run: |
-          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
           version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/9.0*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
           if [[ "$version" == "$version_of_last_release" ]]; then
             echo "Current version is same as version of last release."
@@ -384,7 +384,7 @@ jobs:
       - name: Validate
         id: validate
         run: |
-          version=`$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
+          version=$(sed -n 's:.*<PackageVersion>\(.*\)</PackageVersion>.*:\1:p' ./EFCore.IncludeByExpression/EFCore.IncludeByExpression.csproj)
           version_of_last_release=$(git tag -l "EFCore.IncludeByExpression/8.0*" | sort -V | tail -n 1 | sed 's/EFCore.IncludeByExpression\///')
           if [[ "$version" == "$version_of_last_release" ]]; then
             echo "Current version is same as version of last release."
