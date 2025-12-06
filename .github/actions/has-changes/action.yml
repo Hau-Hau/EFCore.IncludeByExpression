@@ -78,16 +78,28 @@ runs:
           return $output
         }
 
-        $SelectedProject = "${{ inputs.project }}"
-
-        $currentHash = git rev-parse origin/main
+        $SelectedProject = "${{ inputs.project }}"        
+        $currentHash = git rev-parse HEAD
         if (-not $currentHash) {
-          Write-Host "Cannot fetch hash of origin/main"
+          Write-Host "Cannot fetch hash of HEAD"
           exit 1
         }
 
+        $currentBranch = git rev-parse --abbrev-ref HEAD
+        if (-not $currentHash) {
+          Write-Host "Cannot fetch branch name of HEAD"
+          exit 1
+        }
+
+        $tagPattern = $currentBranch -replace 'release/', ''
+        if ($CurrentBranch.EndsWith(".x")) {
+          $tagPattern = $tagPattern -replace '\.x', '.*'
+        } else {
+          $tagPattern = $tagPattern + "/*"
+        }
+
         # Fetch hash of last release based on the project input
-        $lastReleaseHash = git tag -l "$($SelectedProject)/*" | Sort-Object -V | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
+        $lastReleaseHash = git tag -l "$tagPattern" | Sort-Object { [version]($_ -split '/' | Select-Object -Last 1) } | Select-Object -Last 1 | ForEach-Object { git rev-list -n 1 $_ }
         if (-not $lastReleaseHash) {
           "result=true" >> $env:GITHUB_OUTPUT
           exit 0
