@@ -54,7 +54,7 @@ jobs:
             exit 0
           fi
           
-          PR_JSON=$(gh pr list --repo ${{ github.repository }} --state all --json number,mergeCommit,headRefName,baseRefName,state --search "$HEAD_SHA" --limit 1)
+          PR_JSON=$(gh pr list --repo ${{ github.repository }} --state all --json number,mergeCommit,headRefName,baseRefName,state --search "$HEAD_SHA" --limit 1 --jq '.[0]')
           if [ "$(echo "$PR_JSON" | jq '. | length')" -eq 0 ]; then
             echo "[skip] No PR found for commit $HEAD_SHA"
             echo "pull_request_merged=false" >> $GITHUB_OUTPUT
