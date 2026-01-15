@@ -27,7 +27,7 @@
     </AssemblyAttribute>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
     <PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.13" />
   </ItemGroup>
 </Project>
