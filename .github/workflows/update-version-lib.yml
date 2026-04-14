@@ -144,7 +144,7 @@ jobs:
           "value=${{ steps.has-changes-lib.outputs.result || inputs.force == true }}" >> $env:GITHUB_OUTPUT
   
   lib:
-    needs: [can-bump-version-lib]
+    needs: [validate, can-bump-version-lib]
     if: needs.can-bump-version-lib.outputs.value == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -162,7 +162,7 @@ jobs:
       - name: Set branch name
         id: set-branch-name
         run: |
-          TARGET_BRANCH="${{ inputs.branch || github.base_ref }}"
+          TARGET_BRANCH="${{ inputs.branch || github.base_ref || needs.validate.outputs.pr_base_ref }}"
           BRANCH_SUFFIX=$(echo "$TARGET_BRANCH" | sed 's/.*\///')
           echo "value=bot/${{ steps.set-project-name.outputs.value }}/$BRANCH_SUFFIX/update-version-lib" >> $GITHUB_OUTPUT
       - name: Reset branch
@@ -175,7 +175,7 @@ jobs:
       - uses: ./.github/actions/setup-git
         with:
           branch: ${{ steps.set-branch-name.outputs.value }}
-          hard-reset: ${{ inputs.branch || github.base_ref }}
+          hard-reset: ${{ inputs.branch || github.base_ref || needs.validate.outputs.pr_base_ref }}
       - name: Update csproj
         shell: pwsh
         run: |
