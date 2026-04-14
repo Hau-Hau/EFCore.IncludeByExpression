@@ -22,7 +22,7 @@ on:
       - completed
 
 concurrency:
-  group: update-lib-version-${{ inputs.branch || github.base_ref }}
+  group: update-lib-version-${{ inputs.branch || github.base_ref || github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 jobs:
