@@ -100,7 +100,7 @@ jobs:
 
           is_targeting_trunk="$([[ "$PR_BASE_REF" == "main" ]] && echo true || echo false)"
           is_targeting_release="$([[ "$PR_BASE_REF" =~ ^release\/ ]] && echo true || echo false)"
-          if [[ "$is_targeting_trunk" == "false" || "$is_targeting_release" == "false" ]]; then
+          if [[ "$is_targeting_trunk" == "false" && "$is_targeting_release" == "false" ]]; then
             echo "[result=false] Not targeting trunk/release (PR_BASE_REF='$PR_BASE_REF')"  
             echo "result=false" >> $GITHUB_OUTPUT
             exit 0
