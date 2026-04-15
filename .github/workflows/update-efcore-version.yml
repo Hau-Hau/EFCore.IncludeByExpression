@@ -795,7 +795,7 @@ jobs:
             force: true
         - uses: ./.github/actions/put-pull-request
           with:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
             title: Update .NET versions
             body: This PR updates .NET version used in project and pipelines.
             from: ${{ needs.init.outputs.branch }}
