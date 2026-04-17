@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup>
     <PackageId>EFCore.IncludeByExpression</PackageId>
-    <PackageVersion>10.0.2</PackageVersion>
+    <PackageVersion>10.0.3</PackageVersion>
     <Description>A thin layer for building expressions from .Include and .ThenInclude methods.</Description>
     <RepositoryUrl>https://github.com/Hau-Hau/EFCore.IncludeByExpression</RepositoryUrl>
     <RespositoryType>git</RespositoryType>
@@ -31,5 +31,6 @@
     <PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.13" />
   </ItemGroup>
 </Project>
+
 
 
