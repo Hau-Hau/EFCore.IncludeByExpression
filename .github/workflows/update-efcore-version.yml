@@ -27,7 +27,7 @@ jobs:
         id: active-dotnet-version
         shell: pwsh
         run: |
-          $activeVersions = ((((Invoke-WebRequest -Uri "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json" -UseBasicParsing | ConvertFrom-Json)."releases-index" | Where-Object { $_."product" -eq ".NET" -and $_."support-phase" -eq "active" | Sort-Object -Property channel-version -Descending } | Select -Property channel-version)."channel-version") -split "," | ForEach-Object { "net$_" }) -join ","
+          $activeVersions = ((((Invoke-WebRequest -Uri "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json" -UseBasicParsing | ConvertFrom-Json)."releases-index" | Where-Object { $_."product" -eq ".NET" -and ($_."support-phase" -eq "active" -or $_."support-phase" -eq "maintenance") | Sort-Object -Property channel-version -Descending } | Select -Property channel-version)."channel-version") -split "," | ForEach-Object { "net$_" }) -join ","
           if ([string]::IsNullOrWhitespace($activeVersions)) {
             exit 1
           }
