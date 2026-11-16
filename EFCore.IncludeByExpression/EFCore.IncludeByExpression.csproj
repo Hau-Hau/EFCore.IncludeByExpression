@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -28,7 +28,7 @@
     </AssemblyAttribute>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="11.0.0" />
     <PackageReference Include="EFCore.IncludeByExpression.Abstractions" Version="1.0.13" />
   </ItemGroup>
 </Project>
